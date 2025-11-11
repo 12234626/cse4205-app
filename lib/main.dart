@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: '로그인 데모',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -28,9 +28,11 @@ class MyApp extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color.fromARGB(255, 111, 255, 188),
+        ),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: '로그인 페이지'),
     );
   }
 }
@@ -54,6 +56,21 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final _idController = TextEditingController();
+  final _pwController = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _idController.dispose();
+    _pwController.dispose();
+    super.dispose();
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   int _counter = 0;
 
   void _incrementCounter() {
@@ -67,6 +84,87 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // [ID입력칸]
+                TextField(
+                  controller: _idController,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'ID입력칸',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // [비밀번호입력칸]
+                TextField(
+                  controller: _pwController,
+                  obscureText: _obscure,
+                  decoration: InputDecoration(
+                    labelText: '비밀번호입력칸',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      onPressed: () => setState(() => _obscure = !_obscure),
+                      icon: Icon(
+                        _obscure ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      tooltip: _obscure ? '비밀번호 보기' : '비밀번호 숨기기',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // ------- (구분선)
+                const Divider(thickness: 1.0),
+                const SizedBox(height: 4),
+                // [ID찾기] [비밀번호찾기]
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => _showSnack('ID 찾기 눌림'),
+                      child: const Text('ID찾기'),
+                    ),
+                    TextButton(
+                      onPressed: () => _showSnack('비밀번호 찾기 눌림'),
+                      child: const Text('비밀번호찾기'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // [간편로그인] (버튼)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final id = _idController.text.trim();
+                      final pw = _pwController.text;
+                      _showSnack('간편로그인: id="$id" pw 길이=${pw.length}');
+                    },
+                    child: const Text('간편로그인'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /*
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -119,4 +217,5 @@ class _MyHomePageState extends State<MyHomePage> {
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
+  */
 }
