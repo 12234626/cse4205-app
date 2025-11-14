@@ -35,6 +35,21 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // 로고 이미지 (ID 입력창 가로 크기의 60%)
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final logoSize = constraints.maxWidth * 0.6;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 24.0),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: logoSize,
+                        height: logoSize,
+                        fit: BoxFit.contain,
+                      ),
+                    );
+                  },
+                ),
                 TextField(
                   controller: _idController,
                   textInputAction: TextInputAction.next,
