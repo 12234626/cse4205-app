@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'lobby_page.dart';
 import 'profile_page.dart';
+import 'constants.dart';
 
 void main() {
   runApp(const MyApp());
@@ -30,9 +31,7 @@ class MyApp extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 41, 255, 187),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
       ),
       initialRoute: '/',
       routes: {
