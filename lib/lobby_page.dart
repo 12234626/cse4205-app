@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'constants.dart';
 
 class LobbyPage extends StatelessWidget {
   const LobbyPage({super.key});
@@ -7,13 +8,30 @@ class LobbyPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('로그인 데모'),
+        backgroundColor: AppColors.primary,
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () {
             // 메뉴 열기
           },
         ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () {
+                Navigator.pushNamed(context, '/lobby');
+              },
+              child: Image.asset(
+                'assets/images/logo.png',
+                height: 40,
+                width: 40,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -113,7 +131,7 @@ class LobbyPage extends StatelessWidget {
 
   Widget _buildQuestCard(String title, String? points) {
     return Card(
-      color: const Color.fromARGB(255, 145, 251, 253),
+      color: AppColors.questCardBackground,
       elevation: 1,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
