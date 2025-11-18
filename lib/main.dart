@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
+import 'social_login_page.dart';
+import 'signup_method_page.dart';
+import 'signup_info_page.dart';
 import 'lobby_page.dart';
+import 'lobby_parent_page.dart';
 import 'profile_page.dart';
 import 'constants.dart';
 
@@ -35,8 +38,11 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const LoginPage(),
+        '/': (context) => const SocialLoginPage(),
+        '/signup-method': (context) => const SignupMethodPage(),
+        '/signup-info': (context) => const SignupInfoPage(),
         '/lobby': (context) => const LobbyPage(),
+        '/lobby-parent': (context) => const LobbyParentPage(),
         '/profile': (context) => const ProfilePage(),
       },
     );
