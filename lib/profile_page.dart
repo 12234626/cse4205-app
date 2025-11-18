@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'constants.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -7,14 +8,38 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: AppColors.primary,
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () {
             // 메뉴 열기
           },
         ),
-        title: const Text('1seed'),
-        centerTitle: true,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () {
+                Navigator.pushNamed(context, '/lobby');
+              },
+              child: Image.asset(
+                'assets/images/logo.png',
+                height: 40,
+                width: 40,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.pushNamed(context, '/profile');
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'constants.dart';
 
-class LobbyPage extends StatelessWidget {
-  const LobbyPage({super.key});
+class LobbyParentPage extends StatelessWidget {
+  const LobbyParentPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -11,16 +11,14 @@ class LobbyPage extends StatelessWidget {
         backgroundColor: AppColors.primary,
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () {
-            // 메뉴 열기
-          },
+          onPressed: () {},
         ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             InkWell(
               onTap: () {
-                Navigator.pushNamed(context, '/lobby');
+                Navigator.pushNamed(context, '/lobby-parent');
               },
               child: Image.asset(
                 'assets/images/logo.png',
@@ -46,7 +44,6 @@ class LobbyPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 사용자 정보 카드
             Card(
               elevation: 2,
               child: InkWell(
@@ -67,26 +64,14 @@ class LobbyPage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              '안녕 김형주!',
+                              '보호자님 안녕하세요!',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Text('1467일 연속 해결!'),
-                                const SizedBox(width: 16),
-                                const Icon(
-                                  Icons.star,
-                                  color: Colors.amber,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 4),
-                                const Text('별 개수'),
-                              ],
-                            ),
+                            const Text('아이 관리 대시보드'),
                           ],
                         ),
                       ),
@@ -96,85 +81,69 @@ class LobbyPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-
-            // 일일 퀘스트 섹션
             const Text(
-              '일일 퀘스트',
+              '아이 목록',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            _buildQuestCard('일일 출석하기', '+10'),
+            _buildChildCard('아이이름 1', '9,221,372,036,854,775,808개 목표 달성', true),
             const SizedBox(height: 8),
-            _buildQuestCard('분리수거하기', '+30'),
+            _buildChildCard('아이이름 2', null, false),
             const SizedBox(height: 8),
-            _buildQuestCard('퀘스트 항목 3', null),
-            const SizedBox(height: 8),
-            _buildQuestCard('퀘스트 항목 4', null),
+            _buildChildCard('아이이름 3', null, false),
             const SizedBox(height: 24),
-
-            // 하단 메뉴
             const Text(
-              '그 외',
+              '캐러셀 / 돌판 구리',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            _buildMenuButton(context, '기출 신청/X', Icons.assignment, () {}),
-            const SizedBox(height: 8),
-            _buildMenuButton(context, '개인설정', Icons.person_outline, () {}),
-            const SizedBox(height: 8),
-            _buildMenuButton(context, '특강 안내', Icons.school, () {}),
+            Container(
+              height: 200,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8D5F2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.wb_sunny, size: 60, color: Colors.white),
+                    SizedBox(height: 12),
+                    Text('캐러셀 아이템 1', style: TextStyle(fontSize: 18, color: Colors.white)),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildQuestCard(String title, String? points) {
+  Widget _buildChildCard(String name, String? achievement, bool hasToggle) {
     return Card(
-      color: AppColors.questCardBackground,
-      elevation: 1,
+      color: const Color(0xFFE8D5F2),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            const Icon(Icons.attach_file, color: Colors.grey),
+            const CircleAvatar(child: Icon(Icons.child_care)),
             const SizedBox(width: 12),
-            Expanded(child: Text(title, style: const TextStyle(fontSize: 16))),
-            if (points != null)
-              ElevatedButton(
-                onPressed: () {
-                  // 퀘스트 완료 처리
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: Text(points),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  if (achievement != null) ...[
+                    const SizedBox(height: 4),
+                    Text(achievement, style: const TextStyle(fontSize: 12)),
+                  ],
+                ],
               ),
+            ),
+            if (hasToggle) Switch(value: true, onChanged: (value) {}),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildMenuButton(
-    BuildContext context,
-    String title,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return Card(
-      elevation: 1,
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(title),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
       ),
     );
   }
