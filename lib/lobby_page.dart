@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'constants.dart';
+import 'guidelines.dart';
 
 class LobbyPage extends StatelessWidget {
   const LobbyPage({super.key});
@@ -107,18 +108,29 @@ class LobbyPage extends StatelessWidget {
             const SizedBox(height: 8),
             _buildQuestCard('분리수거하기', '+30'),
             const SizedBox(height: 8),
-            _buildQuestCard('퀘스트 항목 3', null),
+            _buildQuestCard('목적지까지 걸어가기', '+20'),
             const SizedBox(height: 8),
-            _buildQuestCard('퀘스트 항목 4', null),
+            _buildQuestCard('소등하기', '+40'),
             const SizedBox(height: 24),
 
             // 하단 메뉴
             const Text(
-              '그 외',
+              '일일퀘스트 가이드라인',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            _buildMenuButton(context, '기출 신청/X', Icons.assignment, () {}),
+            _buildMenuButton(context, '분리수거', Icons.assignment, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GuidelineDetailPage(
+                    title: '가이드라인 : 분리수거',
+                    content: '테스트 내용입니다.',
+                    date: '2025-01-18',
+                  ),
+                ),
+              );
+            }),
             const SizedBox(height: 8),
             _buildMenuButton(context, '개인설정', Icons.person_outline, () {}),
             const SizedBox(height: 8),

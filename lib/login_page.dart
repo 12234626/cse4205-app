@@ -116,17 +116,24 @@ class _LoginPageState extends State<LoginPage> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           FloatingActionButton(
+            heroTag: 'guidelinesButton',
+            onPressed: () => Navigator.pushNamed(context, '/guidelines'),
+            tooltip: '가이드라인 페이지로 이동',
+            child: const Icon(Icons.book),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
             heroTag: 'lobbyButton',
             onPressed: () => Navigator.pushNamed(context, '/lobby'),
-            child: const Icon(Icons.home),
             tooltip: '로비 페이지로 이동',
+            child: const Icon(Icons.home),
           ),
           const SizedBox(height: 16),
           FloatingActionButton(
             heroTag: 'profileButton',
             onPressed: () => Navigator.pushNamed(context, '/profile'),
-            child: const Icon(Icons.person),
             tooltip: '프로필 페이지로 이동',
+            child: const Icon(Icons.person),
           ),
         ],
       ),

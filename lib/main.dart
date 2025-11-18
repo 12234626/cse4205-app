@@ -5,6 +5,7 @@ import 'signup_info_page.dart';
 import 'lobby_page.dart';
 import 'lobby_parent_page.dart';
 import 'profile_page.dart';
+import 'guidelines.dart';
 import 'constants.dart';
 
 void main() {
@@ -44,6 +45,7 @@ class MyApp extends StatelessWidget {
         '/lobby': (context) => const LobbyPage(),
         '/lobby-parent': (context) => const LobbyParentPage(),
         '/profile': (context) => const ProfilePage(),
+        '/guidelines': (context) => const GuidelinesPage(),
       },
     );
   }
