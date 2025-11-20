@@ -71,51 +71,113 @@ class _ProfilePageState extends State<ProfilePage>
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            // 프로필 섹션
-            const CircleAvatar(radius: 50, child: Icon(Icons.person, size: 60)),
-            const SizedBox(height: 16),
-            const Text(
-              '닉네임',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            TextButton(
-              onPressed: () {
-                // 닉네임 변경
-              },
-              child: const Text('< 닉네임 변경 >'),
-            ),
-            const SizedBox(height: 24),
-            const Divider(thickness: 1),
-            const SizedBox(height: 16),
-
-            // 통계 섹션 (연속 해결 및 점수)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            // 배경 이미지와 프로필 사진 섹션
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.bottomCenter,
               children: [
-                _buildStatItem(Icons.access_time, 'N일 연속 해결!'),
-                _buildStatItem(Icons.emoji_events, '35135점'),
+                // 배경 이미지
+                Container(
+                  width: double.infinity,
+                  height: 200,
+                  color: Colors.grey[300],
+                  child: Image.network(
+                    'https://images.unsplash.com/photo-1502472584811-0a2f2feb8968?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        child: const Center(
+                          child: Icon(
+                            Icons.image,
+                            size: 50,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // 프로필 사진 (배경과 겹치게 배치)
+                Positioned(
+                  bottom: -50,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 4),
+                    ),
+                    child: const CircleAvatar(
+                      radius: 50,
+                      child: Icon(Icons.person, size: 60),
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 24),
-            const Divider(thickness: 1),
-            const SizedBox(height: 24),
+            const SizedBox(height: 60), // 프로필 사진 공간 확보
+            // 닉네임 섹션
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                children: [
+                  const Text(
+                    '닉네임',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      // 닉네임 변경
+                    },
+                    child: const Text('< 닉네임 변경 >'),
+                  ),
+                  const SizedBox(height: 24),
+                  const Divider(thickness: 1),
+                  const SizedBox(height: 16),
 
-            // 일일 퀘스트 달성도 섹션
-            const Text(
-              '오늘의 일일 퀘스트 달성도',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  // 통계 섹션 (연속 해결 및 점수)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatItem(Icons.access_time, 'N일 연속 해결!'),
+                      _buildStatItem(Icons.emoji_events, '35135점'),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  const Divider(thickness: 1),
+                  const SizedBox(height: 24),
+
+                  // 일일 퀘스트 달성도 섹션
+                  const Text(
+                    '오늘의 일일 퀘스트 달성도',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildProgressBar(),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$currentPoints / $maxPoints 포인트',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            _buildProgressBar(),
-            const SizedBox(height: 8),
-            Text(
-              '$currentPoints / $maxPoints 포인트',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
