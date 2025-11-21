@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'constants.dart';
-import 'guidelines.dart';
+import 'guideline_detail_page.dart';
+import 'models/guideline_post_model.dart';
 
 class LobbyPage extends StatelessWidget {
   const LobbyPage({super.key});
@@ -37,7 +38,7 @@ class LobbyPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.pushNamed(context, '/profile');
+              Navigator.pushNamed(context, '/settings');
             },
           ),
         ],
@@ -123,10 +124,16 @@ class LobbyPage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const GuidelineDetailPage(
-                    title: '가이드라인 : 분리수거',
-                    content: '테스트 내용입니다.',
-                    date: '2025-01-18',
+                  builder: (context) => GuidelineDetailPage(
+                    post: GuidelinePost(
+                      id: '1',
+                      category: '일일퀘스트',
+                      title: '분리수거 가이드라인',
+                      content: '테스트 내용입니다.',
+                      date: '2025-11-21',
+                      imageUrl:
+                          'https://plus.unsplash.com/premium_photo-1681987448179-4a93b7975018?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+                    ),
                   ),
                 ),
               );
