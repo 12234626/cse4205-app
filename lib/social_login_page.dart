@@ -27,16 +27,13 @@ class SocialLoginPage extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 60),
-                
+
                 const Text(
                   '로고',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 80),
-                
+
                 // 구글 로그인 버튼
                 SizedBox(
                   width: double.infinity,
@@ -57,7 +54,7 @@ class SocialLoginPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // 카카오 로그인 버튼
                 SizedBox(
                   width: double.infinity,
@@ -80,6 +77,32 @@ class SocialLoginPage extends StatelessWidget {
             ),
           ),
         ),
+      ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'guidelinesButton',
+            onPressed: () => Navigator.pushNamed(context, '/guidelines'),
+            tooltip: '가이드라인 페이지로 이동',
+            child: const Icon(Icons.book),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            heroTag: 'lobbyButton',
+            onPressed: () => Navigator.pushNamed(context, '/lobby'),
+            tooltip: '로비 페이지로 이동',
+            child: const Icon(Icons.home),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            heroTag: 'profileButton',
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
+            tooltip: '프로필 페이지로 이동',
+            child: const Icon(Icons.person),
+          ),
+        ],
       ),
     );
   }
