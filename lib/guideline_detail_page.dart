@@ -72,7 +72,7 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
       postId: widget.post.id,
       author: '사용자',
       content: _commentController.text.trim(),
-      date: DateTime.now().toString().substring(0, 16),
+      date: DateTime.now().toString().substring(0, 19),
     );
 
     await CommentStorage.addComment(comment);
@@ -205,26 +205,33 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
 
                   // 수정/삭제 버튼
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Expanded(
+                      SizedBox(
+                        width: 80,
+                        height: 36,
                         child: OutlinedButton(
                           onPressed: _editPost,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primary,
                             side: BorderSide(color: AppColors.primary),
+                            padding: EdgeInsets.zero,
                           ),
-                          child: const Text('수정'),
+                          child: const Text('수정', style: TextStyle(fontSize: 14)),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
+                      SizedBox(
+                        width: 80,
+                        height: 36,
                         child: OutlinedButton(
                           onPressed: _deletePost,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.grey[700],
                             side: BorderSide(color: Colors.grey[300]!),
+                            padding: EdgeInsets.zero,
                           ),
-                          child: const Text('삭제'),
+                          child: const Text('삭제', style: TextStyle(fontSize: 14)),
                         ),
                       ),
                     ],
@@ -365,40 +372,152 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
   }
 
   Widget _buildCommentItem(Comment comment) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    const String defaultProfileImageUrl =
+        'https://images.unsplash.com/photo-1587334274328-64186a80aeee?q=80&w=1162&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                comment.author,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              // 프로필 사진
+              CircleAvatar(
+                radius: 20,
+                backgroundImage: NetworkImage(defaultProfileImageUrl),
+                backgroundColor: Colors.grey[300],
               ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20),
-                onPressed: () => _deleteComment(comment.id),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+              const SizedBox(width: 12),
+              // 댓글 내용
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            comment.author,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_horiz, size: 20),
+                          padding: EdgeInsets.zero,
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              _showEditCommentDialog(comment);
+                            } else if (value == 'delete') {
+                              _deleteComment(comment.id);
+                            }
+                          },
+                          itemBuilder: (BuildContext context) => [
+                            const PopupMenuItem<String>(
+                              value: 'edit',
+                              child: Text('수정'),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Text('삭제'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      comment.content,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      comment.date,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(comment.content),
-          const SizedBox(height: 4),
-          Text(
-            comment.date,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
-        ],
-      ),
+        ),
+        Divider(height: 1, color: Colors.grey[300]),
+      ],
+    );
+  }
+
+  Future<void> _showEditCommentDialog(Comment comment) async {
+    final TextEditingController editController =
+        TextEditingController(text: comment.content);
+    String originalContent = comment.content;
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            bool hasChanges = editController.text.trim() != originalContent;
+            bool canSave = editController.text.trim().isNotEmpty &&
+                editController.text.trim().replaceAll(RegExp(r'\s'), '').isNotEmpty;
+
+            return AlertDialog(
+              title: const Text('댓글 수정'),
+              content: TextField(
+                controller: editController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: '댓글을 입력하세요...',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setDialogState(() {}),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('취소'),
+                ),
+                TextButton(
+                  onPressed: hasChanges && canSave
+                      ? () async {
+                          final updatedComment = Comment(
+                            id: comment.id,
+                            postId: comment.postId,
+                            author: comment.author,
+                            content: editController.text.trim(),
+                            date: DateTime.now().toString().substring(0, 19),
+                          );
+
+                          final comments = await CommentStorage.getAllComments();
+                          final index = comments.indexWhere((c) => c.id == comment.id);
+                          if (index != -1) {
+                            comments[index] = updatedComment;
+                            await CommentStorage.saveComments(comments);
+                          }
+
+                          if (mounted) {
+                            Navigator.of(context).pop();
+                            await _loadComments();
+                          }
+                        }
+                      : null,
+                  child: Text(
+                    '수정',
+                    style: TextStyle(
+                      color: hasChanges && canSave ? null : Colors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
