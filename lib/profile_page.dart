@@ -52,7 +52,7 @@ class _ProfilePageState extends State<ProfilePage>
                 Navigator.pushNamed(context, '/lobby');
               },
               child: Image.asset(
-                'assets/images/logo.png',
+                'assets/images/tmplogo.png',
                 height: 40,
                 width: 40,
                 fit: BoxFit.contain,

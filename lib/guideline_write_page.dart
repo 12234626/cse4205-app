@@ -117,7 +117,7 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
       category: _selectedCategory,
       title: _titleController.text,
       content: _contentController.text,
-      date: DateTime.now().toString().substring(0, 10),
+      date: DateTime.now().toString().substring(0, 19),
       imageUrl: _imagePath,
       isDraft: true,
     );
@@ -177,7 +177,7 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
       category: _selectedCategory,
       title: _titleController.text,
       content: _contentController.text,
-      date: DateTime.now().toString().substring(0, 10),
+      date: DateTime.now().toString().substring(0, 19),
       imageUrl: _imagePath,
       isDraft: false,
     );

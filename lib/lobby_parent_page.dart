@@ -9,10 +9,7 @@ class LobbyParentPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.primary,
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {},
-        ),
+        leading: IconButton(icon: const Icon(Icons.menu), onPressed: () {}),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -21,7 +18,7 @@ class LobbyParentPage extends StatelessWidget {
                 Navigator.pushNamed(context, '/lobby-parent');
               },
               child: Image.asset(
-                'assets/images/logo.png',
+                'assets/images/tmplogo.png',
                 height: 40,
                 width: 40,
                 fit: BoxFit.contain,
@@ -109,7 +106,10 @@ class LobbyParentPage extends StatelessWidget {
                   children: [
                     Icon(Icons.wb_sunny, size: 60, color: Colors.white),
                     SizedBox(height: 12),
-                    Text('캐러셀 아이템 1', style: TextStyle(fontSize: 18, color: Colors.white)),
+                    Text(
+                      '캐러셀 아이템 1',
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
                   ],
                 ),
               ),
@@ -133,7 +133,13 @@ class LobbyParentPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   if (achievement != null) ...[
                     const SizedBox(height: 4),
                     Text(achievement, style: const TextStyle(fontSize: 12)),

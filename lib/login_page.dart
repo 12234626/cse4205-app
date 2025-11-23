@@ -46,7 +46,7 @@ class _LoginPageState extends State<LoginPage> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 24.0),
                       child: Image.asset(
-                        'assets/images/logo.png',
+                        'assets/images/tmplogo.png',
                         width: logoSize,
                         height: logoSize,
                         fit: BoxFit.contain,

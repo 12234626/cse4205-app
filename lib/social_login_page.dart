@@ -21,16 +21,10 @@ class SocialLoginPage extends StatelessWidget {
               children: [
                 // 로고 이미지
                 Image.asset(
-                  'assets/images/logo.png',
-                  width: 150,
-                  height: 150,
+                  'assets/images/logowithtext.png',
+                  width: 250,
+                  height: 250,
                   fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 60),
-
-                const Text(
-                  '로고',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 80),
 
