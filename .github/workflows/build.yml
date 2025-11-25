@@ -1,0 +1,35 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+          KEY_PROPERTIES: ${{ secrets.KEY_PROPERTIES }}
+          STRINGS_XML: ${{ secrets.STRINGS_XML }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+        run: |
+          echo "$ENV_FILE" > .env
+          echo "$STRINGS_XML" > android/app/src/main/res/values/strings.xml
+          echo "$GOOGLE_SERVICES_JSON" > android/app/src/google-services.json
+          echo "$KEY_PROPERTIES" > android/app/src/key.properties
+          echo "$ANDROID_KEYSTORE" | base64 --decode > android/app/src/release.keystore
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.35.7"
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: build-android
+          path: build/app/outputs/flutter-apk/app-release.apk
