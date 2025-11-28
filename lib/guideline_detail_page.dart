@@ -22,6 +22,8 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
   bool _isAscending = false;
   int _currentPage = 1;
   final int _commentsPerPage = 10;
+  String? _editingCommentId;
+  final Map<String, TextEditingController> _editControllers = {};
 
   @override
   void initState() {
@@ -77,6 +79,54 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
 
     await CommentStorage.addComment(comment);
     _commentController.clear();
+    await _loadComments();
+  }
+
+  void _startEditingComment(Comment comment) {
+    setState(() {
+      _editingCommentId = comment.id;
+      _editControllers[comment.id] = TextEditingController(
+        text: comment.content,
+      );
+    });
+  }
+
+  void _cancelEditingComment() {
+    setState(() {
+      if (_editingCommentId != null) {
+        _editControllers[_editingCommentId!]?.dispose();
+        _editControllers.remove(_editingCommentId);
+        _editingCommentId = null;
+      }
+    });
+  }
+
+  Future<void> _saveEditedComment(Comment comment) async {
+    final editController = _editControllers[comment.id];
+    if (editController == null) return;
+
+    final newContent = editController.text.trim();
+    if (newContent.isEmpty ||
+        newContent.replaceAll(RegExp(r'\s'), '').isEmpty) {
+      return;
+    }
+
+    final updatedComment = Comment(
+      id: comment.id,
+      postId: comment.postId,
+      author: comment.author,
+      content: newContent,
+      date: DateTime.now().toString().substring(0, 19),
+    );
+
+    final comments = await CommentStorage.getAllComments();
+    final index = comments.indexWhere((c) => c.id == comment.id);
+    if (index != -1) {
+      comments[index] = updatedComment;
+      await CommentStorage.saveComments(comments);
+    }
+
+    _cancelEditingComment();
     await _loadComments();
   }
 
@@ -177,7 +227,9 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(gradient: AppColors.appBarGradient),
+        ),
         title: const Text('가이드라인 상세'),
       ),
       body: Column(
@@ -217,7 +269,10 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
                             side: BorderSide(color: AppColors.primary),
                             padding: EdgeInsets.zero,
                           ),
-                          child: const Text('수정', style: TextStyle(fontSize: 14)),
+                          child: const Text(
+                            '수정',
+                            style: TextStyle(fontSize: 14),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -231,7 +286,10 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
                             side: BorderSide(color: Colors.grey[300]!),
                             padding: EdgeInsets.zero,
                           ),
-                          child: const Text('삭제', style: TextStyle(fontSize: 14)),
+                          child: const Text(
+                            '삭제',
+                            style: TextStyle(fontSize: 14),
+                          ),
                         ),
                       ),
                     ],
@@ -408,39 +466,107 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
                             ),
                           ),
                         ),
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_horiz, size: 20),
-                          padding: EdgeInsets.zero,
-                          onSelected: (value) {
-                            if (value == 'edit') {
-                              _showEditCommentDialog(comment);
-                            } else if (value == 'delete') {
-                              _deleteComment(comment.id);
-                            }
-                          },
-                          itemBuilder: (BuildContext context) => [
-                            const PopupMenuItem<String>(
-                              value: 'edit',
-                              child: Text('수정'),
-                            ),
-                            const PopupMenuItem<String>(
-                              value: 'delete',
-                              child: Text('삭제'),
-                            ),
-                          ],
-                        ),
+                        if (_editingCommentId != comment.id)
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_horiz, size: 20),
+                            padding: EdgeInsets.zero,
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                _startEditingComment(comment);
+                              } else if (value == 'delete') {
+                                _deleteComment(comment.id);
+                              }
+                            },
+                            itemBuilder: (BuildContext context) => [
+                              const PopupMenuItem<String>(
+                                value: 'edit',
+                                child: Text('수정'),
+                              ),
+                              const PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Text('삭제'),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      comment.content,
-                      style: const TextStyle(fontSize: 14),
-                    ),
+                    if (_editingCommentId == comment.id)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: _editControllers[comment.id],
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              hintText: '댓글을 입력하세요...',
+                              border: OutlineInputBorder(),
+                            ),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: _cancelEditingComment,
+                                child: const Text('취소'),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  final controller =
+                                      _editControllers[comment.id];
+                                  final hasChanges =
+                                      controller?.text.trim() !=
+                                      comment.content;
+                                  final canSave =
+                                      controller?.text.trim().isNotEmpty ==
+                                          true &&
+                                      controller!.text
+                                          .trim()
+                                          .replaceAll(RegExp(r'\s'), '')
+                                          .isNotEmpty;
+                                  if (hasChanges && canSave) {
+                                    _saveEditedComment(comment);
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: () {
+                                    final controller =
+                                        _editControllers[comment.id];
+                                    final hasChanges =
+                                        controller?.text.trim() !=
+                                        comment.content;
+                                    final canSave =
+                                        controller?.text.trim().isNotEmpty ==
+                                            true &&
+                                        controller!.text
+                                            .trim()
+                                            .replaceAll(RegExp(r'\s'), '')
+                                            .isNotEmpty;
+                                    return (hasChanges && canSave)
+                                        ? AppColors.primary
+                                        : Colors.grey;
+                                  }(),
+                                ),
+                                child: const Text('수정'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        comment.content,
+                        style: const TextStyle(fontSize: 14),
+                      ),
                     const SizedBox(height: 4),
-                    Text(
-                      comment.date,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
+                    if (_editingCommentId != comment.id)
+                      Text(
+                        comment.date,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
                   ],
                 ),
               ),
@@ -449,75 +575,6 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
         ),
         Divider(height: 1, color: Colors.grey[300]),
       ],
-    );
-  }
-
-  Future<void> _showEditCommentDialog(Comment comment) async {
-    final TextEditingController editController =
-        TextEditingController(text: comment.content);
-    String originalContent = comment.content;
-
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            bool hasChanges = editController.text.trim() != originalContent;
-            bool canSave = editController.text.trim().isNotEmpty &&
-                editController.text.trim().replaceAll(RegExp(r'\s'), '').isNotEmpty;
-
-            return AlertDialog(
-              title: const Text('댓글 수정'),
-              content: TextField(
-                controller: editController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  hintText: '댓글을 입력하세요...',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setDialogState(() {}),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('취소'),
-                ),
-                TextButton(
-                  onPressed: hasChanges && canSave
-                      ? () async {
-                          final updatedComment = Comment(
-                            id: comment.id,
-                            postId: comment.postId,
-                            author: comment.author,
-                            content: editController.text.trim(),
-                            date: DateTime.now().toString().substring(0, 19),
-                          );
-
-                          final comments = await CommentStorage.getAllComments();
-                          final index = comments.indexWhere((c) => c.id == comment.id);
-                          if (index != -1) {
-                            comments[index] = updatedComment;
-                            await CommentStorage.saveComments(comments);
-                          }
-
-                          if (mounted) {
-                            Navigator.of(context).pop();
-                            await _loadComments();
-                          }
-                        }
-                      : null,
-                  child: Text(
-                    '수정',
-                    style: TextStyle(
-                      color: hasChanges && canSave ? null : Colors.grey,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 
