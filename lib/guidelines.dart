@@ -47,7 +47,9 @@ class _GuidelinesPageState extends State<GuidelinesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(gradient: AppColors.appBarGradient),
+        ),
         title: const Text('가이드라인 모음'),
         actions: [
           IconButton(

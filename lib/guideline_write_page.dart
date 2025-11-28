@@ -20,6 +20,7 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
   String _selectedCategory = '일일퀘스트';
   String? _imagePath;
   final ImagePicker _picker = ImagePicker();
+  bool _isCategoryExpanded = false;
 
   // 수정 모드 관련 변수
   String? _originalTitle;
@@ -213,46 +214,17 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
     }
   }
 
-  Future<void> _showCategoryDialog() async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('카테고리 선택'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(
-                  _selectedCategory == '일일퀘스트'
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked,
-                  color: AppColors.primary,
-                ),
-                title: const Text('일일퀘스트'),
-                onTap: () => Navigator.of(context).pop('일일퀘스트'),
-              ),
-              ListTile(
-                leading: Icon(
-                  _selectedCategory == '주간퀘스트'
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked,
-                  color: AppColors.primary,
-                ),
-                title: const Text('주간퀘스트'),
-                onTap: () => Navigator.of(context).pop('주간퀘스트'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  void _toggleCategoryExpansion() {
+    setState(() {
+      _isCategoryExpanded = !_isCategoryExpanded;
+    });
+  }
 
-    if (result != null) {
-      setState(() {
-        _selectedCategory = result;
-      });
-    }
+  void _selectCategory(String category) {
+    setState(() {
+      _selectedCategory = category;
+      _isCategoryExpanded = false;
+    });
   }
 
   @override
@@ -266,7 +238,9 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: AppColors.primary,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(gradient: AppColors.appBarGradient),
+          ),
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: () {
@@ -303,119 +277,185 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
             ),
           ],
         ),
-        body: Column(
-          children: [
-            // 카테고리 선택 버튼
-            InkWell(
-              onTap: _showCategoryDialog,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            return Stack(
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.max,
                   children: [
-                    Text(
-                      '구분: $_selectedCategory',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    const Icon(Icons.arrow_drop_down),
-                  ],
-                ),
-              ),
-            ),
-
-            // 제목 입력
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: _titleController,
-                onChanged: (_) => setState(() {}),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: const InputDecoration(
-                  hintText: '제목',
-                  border: InputBorder.none,
-                ),
-              ),
-            ),
-
-            const Divider(height: 1),
-
-            // 내용 입력
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: TextField(
-                  controller: _contentController,
-                  onChanged: (_) => setState(() {}),
-                  maxLines: null,
-                  expands: true,
-                  textAlignVertical: TextAlignVertical.top,
-                  decoration: const InputDecoration(
-                    hintText: '내용을 입력하세요...',
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-            ),
-
-            // 이미지 미리보기
-            if (_imagePath != null)
-              Container(
-                margin: const EdgeInsets.all(16.0),
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  image: DecorationImage(
-                    image: FileImage(File(_imagePath!)),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.black54,
+                    // 카테고리 선택 버튼
+                    InkWell(
+                      onTap: _toggleCategoryExpansion,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _imagePath = null;
-                          });
-                        },
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '구분: $_selectedCategory',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            Icon(
+                              _isCategoryExpanded
+                                  ? Icons.arrow_drop_up
+                                  : Icons.arrow_drop_down,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // 제목 입력
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: TextField(
+                        controller: _titleController,
+                        onChanged: (_) => setState(() {}),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: '제목',
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+
+                    const Divider(height: 1),
+
+                    // 내용 입력
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: TextField(
+                          controller: _contentController,
+                          onChanged: (_) => setState(() {}),
+                          maxLines: null,
+                          expands: true,
+                          textAlignVertical: TextAlignVertical.top,
+                          decoration: const InputDecoration(
+                            hintText: '내용을 입력하세요...',
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // 이미지 미리보기
+                    if (_imagePath != null)
+                      Container(
+                        margin: const EdgeInsets.all(16.0),
+                        height: 200,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          image: DecorationImage(
+                            image: FileImage(File(_imagePath!)),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                ),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.black54,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _imagePath = null;
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // 하단 바 (사진 첨부 버튼)
+                    Container(
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.camera_alt),
+                            onPressed: _pickImage,
+                            tooltip: '사진 첨부',
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
 
-            // 하단 바 (사진 첨부 버튼)
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.grey[300]!)),
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.camera_alt),
-                    onPressed: _pickImage,
-                    tooltip: '사진 첨부',
+                // 카테고리 선택 오버레이
+                if (_isCategoryExpanded)
+                  Positioned(
+                    top: 48,
+                    left: 0,
+                    right: 0,
+                    child: Material(
+                      elevation: 8,
+                      color: Colors.white,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              title: Text(
+                                '일일퀘스트',
+                                style: TextStyle(
+                                  fontWeight: _selectedCategory == '일일퀘스트'
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              onTap: () => _selectCategory('일일퀘스트'),
+                            ),
+                            ListTile(
+                              title: Text(
+                                '주간퀘스트',
+                                style: TextStyle(
+                                  fontWeight: _selectedCategory == '주간퀘스트'
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              onTap: () => _selectCategory('주간퀘스트'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ],
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

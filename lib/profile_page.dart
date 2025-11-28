@@ -37,7 +37,9 @@ class _ProfilePageState extends State<ProfilePage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(gradient: AppColors.appBarGradient),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () {
