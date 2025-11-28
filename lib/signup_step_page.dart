@@ -14,9 +14,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
   int _currentStep = 0;
 
   // 폼 데이터
-  String _nickname = '';
   DateTime? _birthDate;
-  String _parentNickname = '';
 
   // 닉네임 관련
   final TextEditingController _nicknameController = TextEditingController();
@@ -96,7 +94,6 @@ class _SignupStepPageState extends State<SignupStepPage> {
         _nicknameErrorMessage = '이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.';
       } else {
         _nicknameErrorMessage = null;
-        _nickname = nickname;
       }
     });
   }
@@ -414,9 +411,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
               FilteringTextInputFormatter.allow(RegExp(r'[가-힣a-zA-Z0-9]')),
             ],
             onChanged: (value) {
-              setState(() {
-                _parentNickname = value;
-              });
+              // 부모님 닉네임 입력 처리 (필요시 추후 활용)
             },
           ),
           const SizedBox(height: 24),

@@ -27,16 +27,11 @@ class LobbyPage extends StatelessWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            InkWell(
-              onTap: () {
-                Navigator.pushNamed(context, '/lobby');
-              },
-              child: Image.asset(
-                'assets/images/tmplogo.png',
-                height: 40,
-                width: 40,
-                fit: BoxFit.contain,
-              ),
+            Image.asset(
+              'assets/images/tmplogo.png',
+              height: 40,
+              width: 40,
+              fit: BoxFit.contain,
             ),
           ],
         ),
@@ -58,7 +53,7 @@ class LobbyPage extends StatelessWidget {
             children: [
               // 사용자 정보 카드
               Card(
-                elevation: 2,
+                elevation: 8,
                 child: InkWell(
                   onTap: () {
                     Navigator.pushNamed(context, '/profile');
@@ -230,7 +225,7 @@ class LobbyPage extends StatelessWidget {
 
   Widget _buildQuestCard(String title, String? points) {
     return Card(
-      elevation: 1,
+      elevation: 6,
       child: Container(
         decoration: const BoxDecoration(
           gradient: AppColors.questCardGradient,
@@ -257,6 +252,8 @@ class LobbyPage extends StatelessWidget {
                     // 퀘스트 완료 처리
                   },
                   style: ElevatedButton.styleFrom(
+                    elevation: 6,
+                    shadowColor: Color.fromRGBO(0, 0, 0, 0.4),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 8,
@@ -284,7 +281,7 @@ class LobbyPage extends StatelessWidget {
     VoidCallback onTap,
   ) {
     return Card(
-      elevation: 1,
+      elevation: 4,
       child: ListTile(
         leading: Icon(icon),
         title: Text(title),
@@ -296,8 +293,8 @@ class LobbyPage extends StatelessWidget {
 
   Widget _buildCarbonSurveyButton(BuildContext context) {
     return Card(
-      elevation: 1,
-      color: AppColors.primaryLight.withOpacity(0.3),
+      elevation: 6,
+      color: Color.fromRGBO(129, 199, 132, 0.3),
       child: ListTile(
         leading: Icon(Icons.eco, color: AppColors.primary, size: 32),
         title: const Text(

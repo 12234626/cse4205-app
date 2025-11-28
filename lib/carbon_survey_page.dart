@@ -71,7 +71,7 @@ class _CarbonSurveyPageState extends State<CarbonSurveyPage> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Color.fromRGBO(0, 0, 0, 0.1),
                     blurRadius: 4,
                     offset: const Offset(0, -2),
                   ),
@@ -84,6 +84,8 @@ class _CarbonSurveyPageState extends State<CarbonSurveyPage> {
                   onPressed: _submitSurvey,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
+                    elevation: 8,
+                    shadowColor: Color.fromRGBO(0, 0, 0, 0.3),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),

@@ -15,6 +15,14 @@ class CarbonSurveyResultPage extends StatelessWidget {
           decoration: const BoxDecoration(gradient: AppColors.appBarGradient),
         ),
         title: const Text('설문 결과'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/lobby', (route) => false);
+          },
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -119,11 +127,14 @@ class CarbonSurveyResultPage extends StatelessWidget {
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.pop(context);
+                    Navigator.of(
+                      context,
+                    ).pushNamedAndRemoveUntil('/lobby', (route) => false);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
+                    elevation: 8,
+                    shadowColor: Color.fromRGBO(0, 0, 0, 0.3),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
