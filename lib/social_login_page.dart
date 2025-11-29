@@ -17,23 +17,37 @@ class _SocialLoginPageState extends State<SocialLoginPage> {
     setState(() => _isLoading = true);
 
     try {
+      // 소셜 로그인 인증
       await AuthService.authenticate(provider);
-      await AuthService.login(provider);
 
-      if (!mounted) return;
+      // DB에 기존 회원 확인 (로그인 시도)
+      try {
+        await AuthService.login(provider);
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('$providerName 로그인 성공!')));
+        if (!mounted) return;
 
-      // TODO: 서버에 accessToken을 보내서 신규/기존 회원 확인 필요
-      // 임시로 로비로 이동
-      Navigator.pushReplacementNamed(context, '/lobby');
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$providerName 로그인 성공!')));
+
+        // 기존 회원 → 로비로 이동
+        Navigator.pushReplacementNamed(context, '/lobby');
+      } catch (loginError) {
+        // 로그인 실패 → 신규 회원 → 회원가입 페이지로 이동
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SignupStepPage(provider: provider),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$providerName 로그인 실패: ${e.toString()}')),
+        SnackBar(content: Text('$providerName 인증 실패: ${e.toString()}')),
       );
     } finally {
       if (mounted) {
