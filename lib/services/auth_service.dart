@@ -16,6 +16,14 @@ class AuthService {
     return await _storage.read(key: _getTokenKey(provider));
   }
 
+  static Future<void> _clearLocalData() async {
+    await _storage.deleteAll();
+    await GoogleSignIn.instance.signOut();
+    await FlutterNaverLogin.logOut();
+    await UserApi.instance.logout();
+    await ApiService.setToken(null, null);
+  }
+
   static Future<void> authenticate(String provider) async {
     String? token;
 
@@ -114,10 +122,12 @@ class AuthService {
   }
 
   static Future<void> logout() async {
-    await _storage.deleteAll();
-    await GoogleSignIn.instance.signOut();
-    await FlutterNaverLogin.logOut();
-    await UserApi.instance.logout();
-    await ApiService.setToken(null, null);
+    await ApiService.post('/api/auth/logout');
+    await _clearLocalData();
+  }
+
+  static Future<void> logoutAll() async {
+    await ApiService.post('/api/auth/logout-all');
+    await _clearLocalData();
   }
 }
