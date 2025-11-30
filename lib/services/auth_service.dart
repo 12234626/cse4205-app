@@ -71,11 +71,14 @@ class AuthService {
         body: {'provider': provider, 'token': await _getToken(provider)},
       );
 
-      if (!response['success']) {
-        throw Exception(response['error']);
+      if (!response.success) {
+        throw Exception(response.error);
       }
 
-      await ApiService.setToken(response['data']['token']);
+      final accessToken = response.data['accessToken'];
+      final refreshToken = response.data['refreshToken'];
+
+      await ApiService.setToken(accessToken, refreshToken);
     } catch (e) {
       rethrow;
     }
@@ -97,11 +100,14 @@ class AuthService {
         },
       );
 
-      if (!response['success']) {
-        throw Exception(response['error']);
+      if (!response.success) {
+        throw Exception(response.error);
       }
 
-      await ApiService.setToken(response['data']['token']);
+      final accessToken = response.data['accessToken'];
+      final refreshToken = response.data['refreshToken'];
+
+      await ApiService.setToken(accessToken, refreshToken);
     } catch (e) {
       rethrow;
     }
@@ -112,6 +118,6 @@ class AuthService {
     await GoogleSignIn.instance.signOut();
     await FlutterNaverLogin.logOut();
     await UserApi.instance.logout();
-    await ApiService.clearToken();
+    await ApiService.setToken(null, null);
   }
 }
