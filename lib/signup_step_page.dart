@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'constants.dart';
+import 'services/auth_service.dart';
 
 class SignupStepPage extends StatefulWidget {
-  const SignupStepPage({super.key});
+  final String? provider;
+
+  const SignupStepPage({super.key, this.provider});
 
   @override
   State<SignupStepPage> createState() => _SignupStepPageState();
@@ -15,6 +18,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
 
   // 폼 데이터
   DateTime? _birthDate;
+  String _selectedRole = 'mentee'; // 기본값: mentee (학생)
 
   // 닉네임 관련
   final TextEditingController _nicknameController = TextEditingController();
@@ -25,6 +29,8 @@ class _SignupStepPageState extends State<SignupStepPage> {
   // 생년월일 관련
   final TextEditingController _birthDateController = TextEditingController();
 
+  bool _isLoading = false;
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -34,7 +40,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
   }
 
   void _nextStep() {
-    if (_currentStep < 2) {
+    if (_currentStep < 3) {
       setState(() {
         _currentStep++;
       });
@@ -131,23 +137,47 @@ class _SignupStepPageState extends State<SignupStepPage> {
     }
   }
 
-  bool _isUnder14() {
-    if (_birthDate == null) return false;
-    final now = DateTime.now();
-    final age = now.year - _birthDate!.year;
-    if (now.month < _birthDate!.month ||
-        (now.month == _birthDate!.month && now.day < _birthDate!.day)) {
-      return age - 1 <= 14;
+  Future<void> _completeSignup() async {
+    final nickname = _nicknameController.text.trim();
+    if (nickname.isEmpty || !_isNicknameAvailable) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('닉네임을 확인해주세요.')));
+      return;
     }
-    return age <= 14;
-  }
 
-  void _completeSignup() {
-    // TODO: 실제 회원가입 API 호출
-    Navigator.pop(context);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다!')));
+    if (widget.provider == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('잘못된 접근입니다. 소셜 로그인 후 다시 시도해주세요.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 백엔드 API 호출하여 PostgreSQL DB에 저장
+      await AuthService.register(widget.provider!, nickname, _selectedRole);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다!')));
+
+      // 로비로 이동
+      Navigator.pushNamedAndRemoveUntil(context, '/lobby', (route) => false);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('회원가입 실패: ${e.toString()}')));
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -206,6 +236,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                   _buildNicknameStep(),
                   _buildBirthDateStep(),
                   _buildParentAccountStep(),
+                  _buildRoleStep(),
                 ],
               ),
             ),
@@ -350,15 +381,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _birthDate != null
-                  ? () {
-                      if (_isUnder14()) {
-                        _nextStep();
-                      } else {
-                        _completeSignup();
-                      }
-                    }
-                  : null,
+              onPressed: _birthDate != null ? _nextStep : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -418,7 +441,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _completeSignup,
+              onPressed: _isLoading ? null : _nextStep,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -428,7 +451,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                 ),
               ),
               child: const Text(
-                '회원가입 완료',
+                '다음',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
@@ -437,7 +460,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
           SizedBox(
             width: double.infinity,
             child: TextButton(
-              onPressed: _completeSignup,
+              onPressed: _isLoading ? null : _nextStep,
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
@@ -445,6 +468,178 @@ class _SignupStepPageState extends State<SignupStepPage> {
                 '건너뛰기',
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoleStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '역할을 선택해주세요',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '사용 목적에 맞는 역할을 선택하세요',
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 32),
+
+          // mentee (학생) 선택
+          InkWell(
+            onTap: () => setState(() => _selectedRole = 'mentee'),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: _selectedRole == 'mentee'
+                      ? AppColors.primary
+                      : Colors.grey[300]!,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                color: _selectedRole == 'mentee'
+                    ? AppColors.primary.withOpacity(0.1)
+                    : Colors.white,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.school,
+                    size: 40,
+                    color: _selectedRole == 'mentee'
+                        ? AppColors.primary
+                        : Colors.grey[600],
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '학생',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: _selectedRole == 'mentee'
+                                ? AppColors.primary
+                                : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '학습을 위해 사용합니다',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_selectedRole == 'mentee')
+                    Icon(Icons.check_circle, color: AppColors.primary),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // mentor (학부모/멘토) 선택
+          InkWell(
+            onTap: () => setState(() => _selectedRole = 'mentor'),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: _selectedRole == 'mentor'
+                      ? AppColors.primary
+                      : Colors.grey[300]!,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                color: _selectedRole == 'mentor'
+                    ? AppColors.primary.withOpacity(0.1)
+                    : Colors.white,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.family_restroom,
+                    size: 40,
+                    color: _selectedRole == 'mentor'
+                        ? AppColors.primary
+                        : Colors.grey[600],
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '학부모',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: _selectedRole == 'mentor'
+                                ? AppColors.primary
+                                : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '자녀의 학습을 관리합니다',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_selectedRole == 'mentor')
+                    Icon(Icons.check_circle, color: AppColors.primary),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _completeSignup,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      '회원가입 완료',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ),
         ],
