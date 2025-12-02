@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'constants.dart';
 import 'services/auth_service.dart';
+import 'services/api_service.dart';
 
 class SignupStepPage extends StatefulWidget {
   final String? provider;
@@ -88,20 +89,46 @@ class _SignupStepPageState extends State<SignupStepPage> {
       return;
     }
 
-    // TODO: 실제 API 호출로 중복 체크
-    // 임시로 랜덤하게 중복 여부 결정
-    await Future.delayed(const Duration(milliseconds: 500));
-    final isDuplicate = nickname.length % 2 == 0; // 임시 로직
+    setState(() => _isLoading = true);
 
-    setState(() {
-      _isNicknameChecked = true;
-      _isNicknameAvailable = !isDuplicate;
-      if (isDuplicate) {
-        _nicknameErrorMessage = '이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.';
-      } else {
-        _nicknameErrorMessage = null;
+    try {
+      // 실제 API 호출로 DB 중복 체크
+      final response = await ApiService.get(
+        '/api/user/check-username?username=$nickname',
+      );
+
+      bool isAvailable = false;
+      if (response.success && response.data != null && response.data is Map) {
+        // 백엔드는 exists를 반환 (true = 이미 존재, false = 사용 가능)
+        final exists = response.data['exists'] == true;
+        isAvailable = !exists; // exists의 반대가 available
       }
-    });
+
+      setState(() {
+        _isNicknameChecked = true;
+        _isNicknameAvailable = isAvailable;
+        _isLoading = false;
+
+        if (!isAvailable) {
+          _nicknameErrorMessage = '이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.';
+        } else {
+          _nicknameErrorMessage = null;
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _nicknameErrorMessage = '닉네임 중복 확인 중 오류가 발생했습니다.';
+        _isNicknameChecked = false;
+        _isNicknameAvailable = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('중복 확인 실패: ${e.toString()}')));
+      }
+    }
   }
 
   Future<void> _selectBirthDate() async {
@@ -409,19 +436,19 @@ class _SignupStepPageState extends State<SignupStepPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '부모님 계정 정보',
+            '멘토 계정 정보',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
-            '만 14세 이하는 부모님 계정 연결을 권장합니다 (선택사항)',
+            '만 14세 이하는 멘토 계정 연결을 권장합니다 (선택사항)',
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
           const SizedBox(height: 32),
           TextField(
             decoration: InputDecoration(
-              labelText: '부모님 닉네임',
-              hintText: '부모님 닉네임을 입력하세요',
+              labelText: '멘토 닉네임',
+              hintText: '멘토 닉네임을 입력하세요',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -434,7 +461,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
               FilteringTextInputFormatter.allow(RegExp(r'[가-힣a-zA-Z0-9]')),
             ],
             onChanged: (value) {
-              // 부모님 닉네임 입력 처리 (필요시 추후 활용)
+              // 멘토 닉네임 입력 처리 (필요시 추후 활용)
             },
           ),
           const SizedBox(height: 24),
@@ -506,7 +533,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                 ),
                 borderRadius: BorderRadius.circular(8),
                 color: _selectedRole == 'mentee'
-                    ? AppColors.primary.withOpacity(0.1)
+                    ? AppColors.primary.withValues(alpha: 0.1)
                     : Colors.white,
               ),
               child: Row(
@@ -524,7 +551,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '학생',
+                          '멘티',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -566,7 +593,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                 ),
                 borderRadius: BorderRadius.circular(8),
                 color: _selectedRole == 'mentor'
-                    ? AppColors.primary.withOpacity(0.1)
+                    ? AppColors.primary.withValues(alpha: 0.1)
                     : Colors.white,
               ),
               child: Row(
@@ -584,7 +611,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '학부모',
+                          '멘토',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -595,7 +622,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '자녀의 학습을 관리합니다',
+                          '멘티의 학습을 관리합니다',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[600],
