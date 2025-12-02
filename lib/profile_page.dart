@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'constants.dart';
+import 'services/api_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -13,6 +14,11 @@ class _ProfilePageState extends State<ProfilePage>
   late AnimationController _animationController;
   late Animation<double> _animation;
 
+  // 사용자 정보
+  String _username = '사용자';
+  int _streak = 0;
+  bool _isLoading = true;
+
   // 임시 데이터 (추후 데이터베이스에서 가져올 예정)
   final int currentPoints = 70;
   final int maxPoints = 100;
@@ -25,6 +31,25 @@ class _ProfilePageState extends State<ProfilePage>
       vsync: this,
     )..repeat();
     _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final response = await ApiService.get('/api/user/profile');
+
+      if (response.success && response.data != null) {
+        setState(() {
+          _username = response.data['username'] ?? '사용자';
+          _streak = response.data['streak'] ?? 0;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -135,16 +160,15 @@ class _ProfilePageState extends State<ProfilePage>
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Column(
                 children: [
-                  const Text(
-                    '닉네임',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      // 닉네임 변경
-                    },
-                    child: const Text('< 닉네임 변경 >'),
-                  ),
+                  _isLoading
+                      ? const CircularProgressIndicator()
+                      : Text(
+                          _username,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                   const SizedBox(height: 24),
                   const Divider(thickness: 1),
                   const SizedBox(height: 16),
@@ -153,7 +177,7 @@ class _ProfilePageState extends State<ProfilePage>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatItem(Icons.access_time, 'N일 연속 해결!'),
+                      _buildStatItem(Icons.access_time, '$_streak일 연속 해결!'),
                       _buildStatItem(Icons.emoji_events, '35135점'),
                     ],
                   ),

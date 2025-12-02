@@ -221,7 +221,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
             if (_currentStep > 0) {
               _previousStep();
             } else {
-              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, '/login');
             }
           },
         ),
@@ -236,7 +236,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                 children: [
                   Expanded(
                     child: LinearProgressIndicator(
-                      value: (_currentStep + 1) / 3,
+                      value: (_currentStep + 1) / 4,
                       backgroundColor: Colors.grey[300],
                       valueColor: AlwaysStoppedAnimation<Color>(
                         AppColors.primary,
@@ -245,7 +245,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    '${_currentStep + 1}/3',
+                    '${_currentStep + 1}/4',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,

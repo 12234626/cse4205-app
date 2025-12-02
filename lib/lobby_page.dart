@@ -5,9 +5,45 @@ import 'models/guideline_post_model.dart';
 import 'carbon_survey_page.dart';
 import 'guidelines.dart';
 import 'community_page.dart';
+import 'services/api_service.dart';
 
-class LobbyPage extends StatelessWidget {
+class LobbyPage extends StatefulWidget {
   const LobbyPage({super.key});
+
+  @override
+  State<LobbyPage> createState() => _LobbyPageState();
+}
+
+class _LobbyPageState extends State<LobbyPage> {
+  String _username = '사용자';
+  int _streak = 0;
+  int _level = 1;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final response = await ApiService.get('/api/user/profile');
+
+      if (response.success && response.data != null) {
+        setState(() {
+          _username = response.data['username'] ?? '사용자';
+          _streak = response.data['streak'] ?? 0;
+          _level = response.data['level'] ?? 1;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,32 +104,42 @@ class LobbyPage extends StatelessWidget {
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                '안녕 김형주!',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const Text('1467일 연속 해결!'),
-                                  const SizedBox(width: 16),
-                                  const Icon(
-                                    Icons.star,
-                                    color: Colors.amber,
-                                    size: 20,
+                          child: _isLoading
+                              ? const Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   ),
-                                  const SizedBox(width: 4),
-                                  const Text('별 개수'),
-                                ],
-                              ),
-                            ],
-                          ),
+                                )
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '안녕 $_username!',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Text('$_streak일 연속 해결!'),
+                                        const SizedBox(width: 16),
+                                        const Icon(
+                                          Icons.star,
+                                          color: Colors.amber,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text('레벨 $_level'),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                         ),
                       ],
                     ),
