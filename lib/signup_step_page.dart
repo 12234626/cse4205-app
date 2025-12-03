@@ -27,6 +27,13 @@ class _SignupStepPageState extends State<SignupStepPage> {
   bool _isNicknameAvailable = false;
   String? _nicknameErrorMessage;
 
+  // 멘토 닉네임 관련
+  final TextEditingController _mentorNicknameController =
+      TextEditingController();
+  int? _mentorUserId;
+  String? _mentorNicknameErrorMessage;
+  bool _isMentorNicknameValid = false;
+
   // 생년월일 관련
   final TextEditingController _birthDateController = TextEditingController();
 
@@ -36,6 +43,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
   void dispose() {
     _pageController.dispose();
     _nicknameController.dispose();
+    _mentorNicknameController.dispose();
     _birthDateController.dispose();
     super.dispose();
   }
@@ -131,6 +139,85 @@ class _SignupStepPageState extends State<SignupStepPage> {
     }
   }
 
+  Future<void> _validateAndProceed() async {
+    final mentorNickname = _mentorNicknameController.text.trim();
+
+    if (mentorNickname.isEmpty) {
+      _nextStep();
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 닉네임으로 사용자 프로필 조회
+      final response = await ApiService.get(
+        '/api/user/profile/username/$mentorNickname',
+      );
+
+      if (!mounted) return;
+
+      if (!response.success || response.data == null) {
+        setState(() {
+          _mentorNicknameErrorMessage = '해당 닉네임의 사용자를 찾을 수 없습니다.';
+          _isMentorNicknameValid = false;
+          _mentorUserId = null;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // 멘토 정보 추출
+      final userData = response.data;
+      final userRole = userData['role'];
+
+      // userId 필드명 확인 (userId 또는 id)
+      final userId = userData['userId'] ?? userData['id'];
+
+      if (userId == null) {
+        setState(() {
+          _mentorNicknameErrorMessage = '사용자 정보를 가져올 수 없습니다.';
+          _isMentorNicknameValid = false;
+          _mentorUserId = null;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // 멘토 역할 확인
+      if (userRole != 'mentor') {
+        setState(() {
+          _mentorNicknameErrorMessage = '해당 사용자는 멘토가 아닙니다.';
+          _isMentorNicknameValid = false;
+          _mentorUserId = null;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // 멘토 유효성 확인 완료
+      setState(() {
+        _mentorNicknameErrorMessage = null;
+        _isMentorNicknameValid = true;
+        _mentorUserId = userId;
+        _selectedRole = 'mentee'; // 멘토를 입력한 경우 자동으로 mentee로 설정
+        _isLoading = false;
+      });
+
+      // 검증 성공 시 다음 단계로
+      _nextStep();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _mentorNicknameErrorMessage = '멘토 확인 중 오류가 발생했습니다.';
+          _isMentorNicknameValid = false;
+          _mentorUserId = null;
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _selectBirthDate() async {
     // 기본 날짜: 이미 선택된 날짜가 있으면 그 날짜, 없으면 현재 날짜
     final DateTime initialDate = _birthDate ?? DateTime.now();
@@ -188,9 +275,39 @@ class _SignupStepPageState extends State<SignupStepPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다!')));
+      // 멘토 닉네임을 입력했고 유효한 경우, 멘토 요청 전송
+      if (_mentorUserId != null && _isMentorNicknameValid) {
+        try {
+          final requestResponse = await ApiService.post(
+            '/api/user/mentor-requests',
+            body: {'mentorId': _mentorUserId},
+          );
+
+          if (!mounted) return;
+
+          if (requestResponse.success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('회원가입이 완료되었고 멘토 요청이 전송되었습니다!')),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('회원가입은 완료되었으나 멘토 요청 전송에 실패했습니다.')),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('회원가입은 완료되었으나 멘토 요청 전송 중 오류가 발생했습니다.'),
+              ),
+            );
+          }
+        }
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다!')));
+      }
 
       // 로비로 이동
       Navigator.pushNamedAndRemoveUntil(context, '/lobby', (route) => false);
@@ -446,6 +563,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
           ),
           const SizedBox(height: 32),
           TextField(
+            controller: _mentorNicknameController,
             decoration: InputDecoration(
               labelText: '멘토 닉네임',
               hintText: '멘토 닉네임을 입력하세요',
@@ -456,19 +574,48 @@ class _SignupStepPageState extends State<SignupStepPage> {
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: AppColors.primary, width: 2),
               ),
+              suffixIcon: _isMentorNicknameValid
+                  ? Icon(Icons.check_circle, color: AppColors.primary)
+                  : null,
             ),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[가-힣a-zA-Z0-9]')),
             ],
             onChanged: (value) {
-              // 멘토 닉네임 입력 처리 (필요시 추후 활용)
+              // 입력 시 에러 메시지와 검증 상태 초기화
+              setState(() {
+                _mentorNicknameErrorMessage = null;
+                _isMentorNicknameValid = false;
+                _mentorUserId = null;
+              });
             },
           ),
+          if (_mentorNicknameErrorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                _mentorNicknameErrorMessage!,
+                style: const TextStyle(color: Colors.red, fontSize: 12),
+              ),
+            ),
+          if (_isMentorNicknameValid)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                '유효한 멘토입니다.',
+                style: TextStyle(color: AppColors.primary, fontSize: 12),
+              ),
+            ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isLoading ? null : _nextStep,
+              onPressed: _isLoading
+                  ? null
+                  : (_isMentorNicknameValid ||
+                        _mentorNicknameController.text.trim().isEmpty)
+                  ? _nextStep
+                  : _validateAndProceed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -476,6 +623,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
+                disabledBackgroundColor: Colors.grey[300],
               ),
               child: const Text(
                 '다음',
@@ -487,7 +635,18 @@ class _SignupStepPageState extends State<SignupStepPage> {
           SizedBox(
             width: double.infinity,
             child: TextButton(
-              onPressed: _isLoading ? null : _nextStep,
+              onPressed: _isLoading
+                  ? null
+                  : () {
+                      // 건너뛰기: 멘토 정보 초기화 후 다음 단계로
+                      setState(() {
+                        _mentorNicknameController.clear();
+                        _mentorNicknameErrorMessage = null;
+                        _isMentorNicknameValid = false;
+                        _mentorUserId = null;
+                      });
+                      _nextStep();
+                    },
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
@@ -521,7 +680,9 @@ class _SignupStepPageState extends State<SignupStepPage> {
 
           // mentee (학생) 선택
           InkWell(
-            onTap: () => setState(() => _selectedRole = 'mentee'),
+            onTap: _mentorUserId != null
+                ? null
+                : () => setState(() => _selectedRole = 'mentee'),
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -580,63 +741,101 @@ class _SignupStepPageState extends State<SignupStepPage> {
           const SizedBox(height: 16),
 
           // mentor (학부모/멘토) 선택
-          InkWell(
-            onTap: () => setState(() => _selectedRole = 'mentor'),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: _selectedRole == 'mentor'
-                      ? AppColors.primary
-                      : Colors.grey[300]!,
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(8),
-                color: _selectedRole == 'mentor'
-                    ? AppColors.primary.withValues(alpha: 0.1)
-                    : Colors.white,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.family_restroom,
-                    size: 40,
+          Opacity(
+            opacity: _mentorUserId != null ? 0.5 : 1.0,
+            child: InkWell(
+              onTap: _mentorUserId != null
+                  ? null
+                  : () => setState(() => _selectedRole = 'mentor'),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(
                     color: _selectedRole == 'mentor'
                         ? AppColors.primary
-                        : Colors.grey[600],
+                        : Colors.grey[300]!,
+                    width: 2,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '멘토',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: _selectedRole == 'mentor'
-                                ? AppColors.primary
-                                : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '멘티의 학습을 관리합니다',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+                  borderRadius: BorderRadius.circular(8),
+                  color: _selectedRole == 'mentor'
+                      ? AppColors.primary.withValues(alpha: 0.1)
+                      : Colors.white,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.family_restroom,
+                      size: 40,
+                      color: _selectedRole == 'mentor'
+                          ? AppColors.primary
+                          : Colors.grey[600],
                     ),
-                  ),
-                  if (_selectedRole == 'mentor')
-                    Icon(Icons.check_circle, color: AppColors.primary),
-                ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '멘토',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: _selectedRole == 'mentor'
+                                  ? AppColors.primary
+                                  : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '멘티의 학습을 관리합니다',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_selectedRole == 'mentor')
+                      Icon(Icons.check_circle, color: AppColors.primary),
+                  ],
+                ),
               ),
             ),
           ),
+          if (_mentorUserId != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 16.0),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '멘토를 입력하셨기 때문에 멘티 역할로 자동 설정됩니다.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           const SizedBox(height: 32),
 
           SizedBox(
