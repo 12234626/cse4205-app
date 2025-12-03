@@ -43,6 +43,44 @@ class _GuidelinesPageState extends State<GuidelinesPage> {
     }
   }
 
+  // 마크다운 문법 제거 및 첫 번째 문장 추출
+  String _getPreviewText(String content) {
+    // 마크다운 문법 제거
+    String cleaned = content
+        // 제목 (# ## ### ####)
+        .replaceAll(RegExp(r'^#{1,6}\s+', multiLine: true), '')
+        // 굵게 (**)
+        .replaceAllMapped(
+          RegExp(r'\*\*(.*?)\*\*'),
+          (match) => match.group(1) ?? '',
+        )
+        // 기울이기 (*)
+        .replaceAllMapped(RegExp(r'\*(.*?)\*'), (match) => match.group(1) ?? '')
+        // 밑줄 (<u></u>)
+        .replaceAllMapped(
+          RegExp(r'<u>(.*?)</u>'),
+          (match) => match.group(1) ?? '',
+        )
+        // 리스트 (-)
+        .replaceAll(RegExp(r'^\s*-\s+', multiLine: true), '')
+        // 여러 줄 바꿈을 공백으로
+        .replaceAll(RegExp(r'\n+'), ' ')
+        // 여러 공백을 하나로
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    // 첫 번째 문장 추출 (마침표, 느낌표, 물음표 기준)
+    final match = RegExp(r'^(.*?[.!?]\s*)').firstMatch(cleaned);
+    String preview = match != null ? match.group(1)! : cleaned;
+
+    // 최대 50자로 제한
+    if (preview.length > 50) {
+      preview = '${preview.substring(0, 50)}...';
+    }
+
+    return preview;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,7 +160,7 @@ class _GuidelinesPageState extends State<GuidelinesPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      post.content,
+                      _getPreviewText(post.content),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 14, color: Colors.grey[700]),

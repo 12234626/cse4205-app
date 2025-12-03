@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'dart:io';
 import 'constants.dart';
 import 'models/guideline_post_model.dart';
@@ -24,10 +25,13 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
   final int _commentsPerPage = 10;
   String? _editingCommentId;
   final Map<String, TextEditingController> _editControllers = {};
+  late GuidelinePost currentPost;
+  bool _isModified = false;
 
   @override
   void initState() {
     super.initState();
+    currentPost = widget.post;
     _loadComments();
   }
 
@@ -38,7 +42,7 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
   }
 
   Future<void> _loadComments() async {
-    final comments = await CommentStorage.getComments(widget.post.id);
+    final comments = await CommentStorage.getComments(currentPost.id);
     setState(() {
       _comments = comments;
       _sortComments();
@@ -71,7 +75,7 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
 
     final comment = Comment(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      postId: widget.post.id,
+      postId: currentPost.id,
       author: '사용자',
       content: _commentController.text.trim(),
       date: DateTime.now().toString().substring(0, 19),
@@ -161,12 +165,21 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GuidelineWritePage(postToEdit: widget.post),
+        builder: (context) => GuidelineWritePage(postToEdit: currentPost),
       ),
     );
 
     if (result == true && mounted) {
-      Navigator.pop(context, true);
+      // 수정된 게시글 데이터 로드
+      final posts = await GuidelineStorage.getPosts();
+      final updatedPost = posts.firstWhere(
+        (p) => p.id == currentPost.id,
+        orElse: () => currentPost,
+      );
+      setState(() {
+        currentPost = updatedPost;
+        _isModified = true;
+      });
     }
   }
 
@@ -193,11 +206,12 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
 
     if (result == true) {
       final posts = await GuidelineStorage.getPosts();
-      posts.removeWhere((p) => p.id == widget.post.id);
+      posts.removeWhere((p) => p.id == currentPost.id);
       await GuidelineStorage.savePosts(posts);
-      await CommentStorage.deleteCommentsByPostId(widget.post.id);
+      await CommentStorage.deleteCommentsByPostId(currentPost.id);
 
       if (mounted) {
+        _isModified = true;
         Navigator.pop(context, true);
       }
     }
@@ -223,208 +237,242 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
   @override
   Widget build(BuildContext context) {
     final String displayTitle =
-        '[${widget.post.category}] ${widget.post.title}';
+        '[${currentPost.category}] ${currentPost.title}';
 
-    return Scaffold(
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: AppColors.appBarGradient),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (!didPop) {
+          // 뒤로가기 버튼을 눌렀을 때 수정 여부 반환
+          Navigator.of(context).pop(_isModified);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(gradient: AppColors.appBarGradient),
+          ),
+          title: const Text('가이드라인 상세'),
         ),
-        title: const Text('가이드라인 상세'),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 제목
-                  Text(
-                    displayTitle,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 제목
+                    Text(
+                      displayTitle,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.post.date,
-                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 8),
+                    Text(
+                      currentPost.date,
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 16),
 
-                  // 수정/삭제 버튼
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      SizedBox(
-                        width: 80,
-                        height: 36,
-                        child: OutlinedButton(
-                          onPressed: _editPost,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: BorderSide(color: AppColors.primary),
-                            padding: EdgeInsets.zero,
-                          ),
-                          child: const Text(
-                            '수정',
-                            style: TextStyle(fontSize: 14),
+                    // 수정/삭제 버튼
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        SizedBox(
+                          width: 80,
+                          height: 36,
+                          child: OutlinedButton(
+                            onPressed: _editPost,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              side: BorderSide(color: AppColors.primary),
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: const Text(
+                              '수정',
+                              style: TextStyle(fontSize: 14),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 80,
-                        height: 36,
-                        child: OutlinedButton(
-                          onPressed: _deletePost,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.grey[700],
-                            side: BorderSide(color: Colors.grey[300]!),
-                            padding: EdgeInsets.zero,
-                          ),
-                          child: const Text(
-                            '삭제',
-                            style: TextStyle(fontSize: 14),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 80,
+                          height: 36,
+                          child: OutlinedButton(
+                            onPressed: _deletePost,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.grey[700],
+                              side: BorderSide(color: Colors.grey[300]!),
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: const Text(
+                              '삭제',
+                              style: TextStyle(fontSize: 14),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 32),
-
-                  // 이미지
-                  if (widget.post.imageUrl != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: _buildDetailImage(widget.post.imageUrl!),
+                      ],
                     ),
+                    const Divider(height: 32),
 
-                  // 내용
-                  Text(
-                    widget.post.content,
-                    style: const TextStyle(fontSize: 16, height: 1.5),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // 추천/비추천
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Column(
-                        children: [
-                          Icon(
-                            Icons.thumb_up_outlined,
-                            color: Colors.grey[600],
-                          ),
-                          const SizedBox(height: 4),
-                          Text('0', style: TextStyle(color: Colors.grey[600])),
-                        ],
+                    // 이미지
+                    if (currentPost.imageUrl != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: _buildDetailImage(currentPost.imageUrl!),
                       ),
-                      const SizedBox(width: 40),
-                      Column(
-                        children: [
-                          Icon(
-                            Icons.thumb_down_outlined,
-                            color: Colors.grey[600],
-                          ),
-                          const SizedBox(height: 4),
-                          Text('0', style: TextStyle(color: Colors.grey[600])),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  const Divider(),
-                  const SizedBox(height: 16),
 
-                  // 댓글 헤더
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _comments.isEmpty ? '댓글' : '댓글 (${_comments.length})',
-                        style: const TextStyle(
+                    // 내용 (Markdown 렌더링)
+                    MarkdownBody(
+                      data: currentPost.content,
+                      selectable: true,
+                      styleSheet: MarkdownStyleSheet(
+                        p: const TextStyle(fontSize: 16, height: 1.5),
+                        h1: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h2: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h3: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h4: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      InkWell(
-                        onTap: _toggleSort,
-                        child: Row(
+                    ),
+                    const SizedBox(height: 24),
+
+                    // 추천/비추천
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Column(
                           children: [
-                            const Text('최신순'),
-                            const SizedBox(width: 4),
                             Icon(
-                              _isAscending
-                                  ? Icons.arrow_upward
-                                  : Icons.arrow_downward,
-                              size: 16,
+                              Icons.thumb_up_outlined,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '0',
+                              style: TextStyle(color: Colors.grey[600]),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 댓글 목록
-                  ..._paginatedComments.map(
-                    (comment) => _buildCommentItem(comment),
-                  ),
-
-                  // 페이지네이션
-                  if (_totalPages > 0) ...[
+                        const SizedBox(width: 40),
+                        Column(
+                          children: [
+                            Icon(
+                              Icons.thumb_down_outlined,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '0',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Divider(),
                     const SizedBox(height: 16),
-                    _buildPagination(),
+
+                    // 댓글 헤더
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _comments.isEmpty ? '댓글' : '댓글 (${_comments.length})',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        InkWell(
+                          onTap: _toggleSort,
+                          child: Row(
+                            children: [
+                              const Text('최신순'),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _isAscending
+                                    ? Icons.arrow_upward
+                                    : Icons.arrow_downward,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 댓글 목록
+                    ..._paginatedComments.map(
+                      (comment) => _buildCommentItem(comment),
+                    ),
+
+                    // 페이지네이션
+                    if (_totalPages > 0) ...[
+                      const SizedBox(height: 16),
+                      _buildPagination(),
+                    ],
                   ],
+                ),
+              ),
+            ),
+
+            // 댓글 입력란
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: Colors.grey[300]!)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      maxLines: 1,
+                      decoration: InputDecoration(
+                        hintText: '댓글을 입력하세요...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _canAddComment ? _addComment : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: const CircleBorder(),
+                      padding: const EdgeInsets.all(12),
+                    ),
+                    child: const Icon(Icons.send, size: 20),
+                  ),
                 ],
               ),
             ),
-          ),
-
-          // 댓글 입력란
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey[300]!)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    maxLines: 1,
-                    decoration: InputDecoration(
-                      hintText: '댓글을 입력하세요...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _canAddComment ? _addComment : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: const CircleBorder(),
-                    padding: const EdgeInsets.all(12),
-                  ),
-                  child: const Icon(Icons.send, size: 20),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

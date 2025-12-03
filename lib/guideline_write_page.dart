@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'constants.dart';
@@ -21,6 +22,7 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
   String? _imagePath;
   final ImagePicker _picker = ImagePicker();
   bool _isCategoryExpanded = false;
+  bool _showPreview = true;
 
   // 수정 모드 관련 변수
   String? _originalTitle;
@@ -45,6 +47,9 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
       _contentController.text = post.content;
       _selectedCategory = post.category;
       _imagePath = post.imageUrl;
+
+      // 수정 모드에서는 편집 모드로 시작
+      _showPreview = false;
 
       // 원본 저장
       _originalTitle = post.title;
@@ -79,6 +84,100 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
+  }
+
+  void _applyMarkdown(String prefix, {String? suffix, bool perLine = false}) {
+    final text = _contentController.text;
+    final selection = _contentController.selection;
+
+    if (!selection.isValid) return;
+
+    final selectedText = selection.textInside(text);
+    String newText;
+
+    if (perLine) {
+      final lines = selectedText.split('\n');
+      final modifiedLines = lines
+          .map((line) {
+            if (line.trim().isEmpty) return line;
+            return '$prefix$line';
+          })
+          .join('\n');
+      newText = modifiedLines;
+    } else {
+      newText = '$prefix$selectedText${suffix ?? ''}';
+    }
+
+    final newContent = text.replaceRange(
+      selection.start,
+      selection.end,
+      newText,
+    );
+
+    _contentController.value = TextEditingValue(
+      text: newContent,
+      selection: TextSelection.collapsed(
+        offset: selection.start + newText.length,
+      ),
+    );
+  }
+
+  void _showHeadingMenu() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.title),
+              title: const Text(
+                '제목 1',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _applyMarkdown('# ', perLine: true);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.title),
+              title: const Text(
+                '제목 2',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _applyMarkdown('## ', perLine: true);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.title),
+              title: const Text(
+                '제목 3',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _applyMarkdown('### ', perLine: true);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.title),
+              title: const Text(
+                '제목 4',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _applyMarkdown('#### ', perLine: true);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   bool get _hasContent {
@@ -253,6 +352,14 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
           ),
           title: Text(widget.postToEdit != null ? '글 수정' : '글쓰기'),
           actions: [
+            IconButton(
+              icon: Icon(_showPreview ? Icons.edit : Icons.visibility),
+              onPressed: () {
+                setState(() {
+                  _showPreview = !_showPreview;
+                });
+              },
+            ),
             if (widget.postToEdit == null)
               TextButton(
                 onPressed: _saveDraft,
@@ -319,6 +426,7 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
                       padding: const EdgeInsets.all(16.0),
                       child: TextField(
                         controller: _titleController,
+                        enableIMEPersonalizedLearning: false,
                         onChanged: (_) => setState(() {}),
                         style: const TextStyle(
                           fontSize: 20,
@@ -333,21 +441,33 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
 
                     const Divider(height: 1),
 
-                    // 내용 입력
+                    // 내용 입력 또는 미리보기
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: TextField(
-                          controller: _contentController,
-                          onChanged: (_) => setState(() {}),
-                          maxLines: null,
-                          expands: true,
-                          textAlignVertical: TextAlignVertical.top,
-                          decoration: const InputDecoration(
-                            hintText: '내용을 입력하세요...',
-                            border: InputBorder.none,
-                          ),
-                        ),
+                        child: _showPreview
+                            ? SingleChildScrollView(
+                                child: Markdown(
+                                  data: _contentController.text.isEmpty
+                                      ? '내용을 입력하세요...'
+                                      : _contentController.text,
+                                  selectable: true,
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                ),
+                              )
+                            : TextField(
+                                controller: _contentController,
+                                enableIMEPersonalizedLearning: false,
+                                onChanged: (_) => setState(() {}),
+                                maxLines: null,
+                                expands: true,
+                                textAlignVertical: TextAlignVertical.top,
+                                decoration: const InputDecoration(
+                                  hintText: '내용을 입력하세요... (Markdown 문법 지원)',
+                                  border: InputBorder.none,
+                                ),
+                              ),
                       ),
                     ),
 
@@ -387,24 +507,82 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
                         ),
                       ),
 
-                    // 하단 바 (사진 첨부 버튼)
-                    Container(
-                      padding: const EdgeInsets.all(16.0),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          top: BorderSide(color: Colors.grey[300]!),
+                    // 하단 바 (Markdown 도구 모음)
+                    if (!_showPreview)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          border: Border(
+                            top: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            // 굵게
+                            IconButton(
+                              icon: const Icon(Icons.format_bold),
+                              tooltip: '굵게',
+                              onPressed: () =>
+                                  _applyMarkdown('**', suffix: '**'),
+                            ),
+                            // 기울이기
+                            IconButton(
+                              icon: const Icon(Icons.format_italic),
+                              tooltip: '기울이기',
+                              onPressed: () => _applyMarkdown('*', suffix: '*'),
+                            ),
+                            // 밑줄
+                            IconButton(
+                              icon: const Icon(Icons.format_underline),
+                              tooltip: '밑줄',
+                              onPressed: () =>
+                                  _applyMarkdown('<u>', suffix: '</u>'),
+                            ),
+                            // 제목
+                            IconButton(
+                              icon: const Icon(Icons.title, size: 28),
+                              tooltip: '제목',
+                              onPressed: _showHeadingMenu,
+                            ),
+                            // 리스트
+                            IconButton(
+                              icon: const Icon(Icons.format_list_bulleted),
+                              tooltip: '리스트',
+                              onPressed: () =>
+                                  _applyMarkdown('- ', perLine: true),
+                            ),
+                            const Spacer(),
+                            // 사진 첨부
+                            IconButton(
+                              icon: const Icon(Icons.camera_alt),
+                              onPressed: _pickImage,
+                              tooltip: '사진 첨부',
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(16.0),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.camera_alt),
+                              onPressed: _pickImage,
+                              tooltip: '사진 첨부',
+                            ),
+                          ],
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.camera_alt),
-                            onPressed: _pickImage,
-                            tooltip: '사진 첨부',
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
 

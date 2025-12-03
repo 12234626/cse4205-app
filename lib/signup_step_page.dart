@@ -221,7 +221,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
             if (_currentStep > 0) {
               _previousStep();
             } else {
-              Navigator.pushReplacementNamed(context, '/login');
+              Navigator.pushReplacementNamed(context, '/');
             }
           },
         ),

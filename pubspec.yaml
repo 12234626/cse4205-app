@@ -44,6 +44,7 @@ dependencies:
   kakao_flutter_sdk_user: ^1.9.5
   shared_preferences: ^2.2.2
   image_picker: ^1.0.7
+  flutter_markdown: ^0.7.4+1
 
 dev_dependencies:
   flutter_test:
