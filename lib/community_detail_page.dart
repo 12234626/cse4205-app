@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'constants.dart';
 import 'models/community_post_model.dart';
 import 'models/comment_model.dart';
@@ -194,10 +195,29 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                     ),
                     const Divider(height: 32),
 
-                    // 내용
-                    Text(
-                      widget.post.content,
-                      style: const TextStyle(fontSize: 16, height: 1.6),
+                    // 내용 (Markdown 렌더링)
+                    MarkdownBody(
+                      data: widget.post.content,
+                      selectable: true,
+                      styleSheet: MarkdownStyleSheet(
+                        p: const TextStyle(fontSize: 16, height: 1.6),
+                        h1: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h2: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h3: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        h4: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
 
                     if (widget.post.imageUrl != null) ...[
