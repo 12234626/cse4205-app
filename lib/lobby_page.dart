@@ -6,6 +6,8 @@ import 'carbon_survey_page.dart';
 import 'guidelines.dart';
 import 'community_page.dart';
 import 'services/api_service.dart';
+import 'mentor_request_page.dart';
+import 'mentor_request_management_page.dart';
 
 class LobbyPage extends StatefulWidget {
   const LobbyPage({super.key});
@@ -18,6 +20,8 @@ class _LobbyPageState extends State<LobbyPage> {
   String _username = '사용자';
   int _streak = 0;
   int _level = 1;
+  String _role = 'mentee';
+  List<Map<String, dynamic>> _mentees = [];
   bool _isLoading = true;
 
   @override
@@ -36,6 +40,23 @@ class _LobbyPageState extends State<LobbyPage> {
             _username = response.data['username'] ?? '사용자';
             _streak = response.data['streak'] ?? 0;
             _level = response.data['level'] ?? 1;
+            _role = response.data['role'] ?? 'mentee';
+
+            // 멘토인 경우 mentees 정보 추출
+            if (response.data['mentees'] != null &&
+                response.data['mentees'] is List) {
+              _mentees = List<Map<String, dynamic>>.from(
+                response.data['mentees'].map(
+                  (mentee) => {
+                    'username': mentee['username'] ?? '멘티',
+                    'streak': mentee['streak'] ?? 0,
+                    'level': mentee['level'] ?? 1,
+                    'exp': mentee['exp'] ?? 0,
+                  },
+                ),
+              );
+            }
+
             _isLoading = false;
           });
         }
@@ -164,6 +185,9 @@ class _LobbyPageState extends State<LobbyPage> {
               ),
               const SizedBox(height: 24),
 
+              // 멘토인 경우 멘티 목록 표시
+              if (_role == 'mentor') ..._buildMenteeSection(),
+
               // 일일 퀘스트 섹션
               const Text(
                 '일일 퀘스트',
@@ -279,6 +303,35 @@ class _LobbyPageState extends State<LobbyPage> {
                 );
               },
             ),
+            // 역할별 메뉴 항목
+            if (_role == 'mentee')
+              ListTile(
+                leading: const Icon(Icons.person_add),
+                title: const Text('멘토 추가', style: TextStyle(fontSize: 16)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MentorRequestPage(),
+                    ),
+                  );
+                },
+              ),
+            if (_role == 'mentor')
+              ListTile(
+                leading: const Icon(Icons.notifications),
+                title: const Text('멘토 요청 관리', style: TextStyle(fontSize: 16)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MentorRequestManagementPage(),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -371,6 +424,96 @@ class _LobbyPageState extends State<LobbyPage> {
             MaterialPageRoute(builder: (context) => const CarbonSurveyPage()),
           );
         },
+      ),
+    );
+  }
+
+  List<Widget> _buildMenteeSection() {
+    return [
+      const Text(
+        '관리 중인 멘티',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 12),
+      if (_mentees.isEmpty)
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Center(
+              child: Text(
+                '현재 관리 중인 멘티가 없습니다.',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+            ),
+          ),
+        )
+      else
+        ..._mentees.map(
+          (mentee) => Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: _buildMenteeCard(
+              mentee['username'],
+              mentee['streak'],
+              mentee['level'],
+              mentee['exp'],
+            ),
+          ),
+        ),
+      const SizedBox(height: 24),
+    ];
+  }
+
+  Widget _buildMenteeCard(String username, int streak, int level, int exp) {
+    return Card(
+      elevation: 4,
+      color: const Color(0xFFE8F5E9),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            const CircleAvatar(radius: 25, child: Icon(Icons.person, size: 30)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    username,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.local_fire_department,
+                        size: 16,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(width: 4),
+                      Text('$streak일'),
+                      const SizedBox(width: 16),
+                      const Icon(Icons.star, size: 16, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text('Lv.$level'),
+                      const SizedBox(width: 16),
+                      const Icon(
+                        Icons.trending_up,
+                        size: 16,
+                        color: Colors.blue,
+                      ),
+                      const SizedBox(width: 4),
+                      Text('EXP $exp'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
