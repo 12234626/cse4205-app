@@ -26,15 +26,31 @@ class _SettingsPageState extends State<SettingsPage> {
       final response = await ApiService.get('/api/user/profile');
 
       if (response.success && response.data != null) {
-        setState(() {
-          _username = response.data['username'] ?? '사용자';
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _username = response.data['username'] ?? '사용자';
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('프로필 정보를 불러오지 못했습니다.')));
+        }
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: ${e.toString()}')));
+      }
     }
   }
 
