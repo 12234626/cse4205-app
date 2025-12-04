@@ -100,16 +100,13 @@ class _SignupStepPageState extends State<SignupStepPage> {
     setState(() => _isLoading = true);
 
     try {
-      // 실제 API 호출로 DB 중복 체크
       final response = await ApiService.get(
-        '/api/user/check-username?username=$nickname',
+        '/api/user/profile/username/$nickname',
       );
 
       bool isAvailable = false;
-      if (response.success && response.data != null && response.data is Map) {
-        // 백엔드는 exists를 반환 (true = 이미 존재, false = 사용 가능)
-        final exists = response.data['exists'] == true;
-        isAvailable = !exists; // exists의 반대가 available
+      if (response.success) {
+        isAvailable = true;
       }
 
       setState(() {
@@ -279,7 +276,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
       if (_mentorUserId != null && _isMentorNicknameValid) {
         try {
           final requestResponse = await ApiService.post(
-            '/api/user/mentor-requests',
+            '/api/user/mentor-request',
             body: {'mentorId': _mentorUserId},
           );
 

@@ -24,7 +24,7 @@ class _MentorRequestManagementPageState
   Future<void> _loadRequests() async {
     try {
       final response = await ApiService.get(
-        '/api/user/mentor-requests/received',
+        '/api/user/mentor-request/received',
       );
 
       if (mounted) {
@@ -63,8 +63,8 @@ class _MentorRequestManagementPageState
 
     try {
       final endpoint = accept
-          ? '/api/user/mentor-requests/$requestId/accept'
-          : '/api/user/mentor-requests/$requestId/reject';
+          ? '/api/user/mentor-request/$requestId/accept'
+          : '/api/user/mentor-request/$requestId/reject';
 
       final response = await ApiService.put(endpoint);
 

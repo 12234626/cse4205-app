@@ -77,7 +77,7 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
 
       // 2단계: 멘토 ID로 요청 전송
       final requestResponse = await ApiService.post(
-        '/api/user/mentor-requests',
+        '/api/user/mentor-request',
         body: {'mentorId': mentorId},
       );
 
