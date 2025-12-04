@@ -62,8 +62,12 @@ class ApiService {
     };
   }
 
-  static String _getBody(Object? body) {
-    return body is String ? body : json.encode(body);
+  static String? _getBody(Object? body) {
+    return body == null
+        ? null
+        : body is String
+        ? body
+        : json.encode(body);
   }
 
   static ResponseDto _formatResponse(http.Response response) {
