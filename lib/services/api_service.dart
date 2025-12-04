@@ -62,6 +62,10 @@ class ApiService {
     };
   }
 
+  static String _getBody(Object? body) {
+    return body is String ? body : json.encode(body);
+  }
+
   static ResponseDto _formatResponse(http.Response response) {
     final body = json.decode(response.body);
 
@@ -178,7 +182,7 @@ class ApiService {
       return await http.post(
         Uri.parse('$_baseUrl$url'),
         headers: await _getHeaders(headers),
-        body: body,
+        body: _getBody(body),
       );
     });
   }
@@ -192,7 +196,7 @@ class ApiService {
       return await http.put(
         Uri.parse('$_baseUrl$url'),
         headers: await _getHeaders(headers),
-        body: body,
+        body: _getBody(body),
       );
     });
   }
@@ -206,7 +210,7 @@ class ApiService {
       return await http.patch(
         Uri.parse('$_baseUrl$url'),
         headers: await _getHeaders(headers),
-        body: body,
+        body: _getBody(body),
       );
     });
   }
@@ -220,7 +224,7 @@ class ApiService {
       return await http.delete(
         Uri.parse('$_baseUrl$url'),
         headers: await _getHeaders(headers),
-        body: body,
+        body: _getBody(body),
       );
     });
   }
