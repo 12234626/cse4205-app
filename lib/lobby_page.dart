@@ -8,6 +8,7 @@ import 'community_page.dart';
 import 'services/api_service.dart';
 import 'mentor_request_page.dart';
 import 'mentor_request_management_page.dart';
+import 'profile_page.dart';
 
 class LobbyPage extends StatefulWidget {
   const LobbyPage({super.key});
@@ -22,6 +23,7 @@ class _LobbyPageState extends State<LobbyPage> {
   int _level = 1;
   String _role = 'mentee';
   List<Map<String, dynamic>> _mentees = [];
+  Map<String, dynamic>? _mentor;
   bool _isLoading = true;
 
   @override
@@ -41,24 +43,15 @@ class _LobbyPageState extends State<LobbyPage> {
             _streak = response.data['streak'] ?? 0;
             _level = response.data['level'] ?? 1;
             _role = response.data['role'] ?? 'mentee';
-
-            // 멘토인 경우 mentees 정보 추출
-            if (response.data['mentees'] != null &&
-                response.data['mentees'] is List) {
-              _mentees = List<Map<String, dynamic>>.from(
-                response.data['mentees'].map(
-                  (mentee) => {
-                    'username': mentee['username'] ?? '멘티',
-                    'streak': mentee['streak'] ?? 0,
-                    'level': mentee['level'] ?? 1,
-                    'exp': mentee['exp'] ?? 0,
-                  },
-                ),
-              );
-            }
-
             _isLoading = false;
           });
+
+          // 멘토인 경우 별도로 멘티 목록 조회
+          if (_role == 'mentor') {
+            _loadMentees();
+          } else if (_role == 'mentee') {
+            _loadMentor();
+          }
         }
       } else {
         if (mounted) {
@@ -78,6 +71,60 @@ class _LobbyPageState extends State<LobbyPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: ${e.toString()}')));
+      }
+    }
+  }
+
+  Future<void> _loadMentees() async {
+    try {
+      final response = await ApiService.get('/api/user/mentee');
+
+      if (response.success && response.data != null) {
+        if (mounted) {
+          setState(() {
+            _mentees = List<Map<String, dynamic>>.from(
+              response.data.map(
+                (mentee) => {
+                  'username': mentee['username'] ?? '멘티',
+                  'streak': mentee['streak'] ?? 0,
+                  'level': mentee['level'] ?? 1,
+                  'exp': mentee['exp'] ?? 0,
+                },
+              ),
+            );
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('멘티 목록 조회 오류: ${e.toString()}')));
+      }
+    }
+  }
+
+  Future<void> _loadMentor() async {
+    try {
+      final response = await ApiService.get('/api/user/mentor');
+
+      if (response.success && response.data != null) {
+        if (mounted) {
+          setState(() {
+            _mentor = {
+              'username': response.data['username'] ?? '멘토',
+              'streak': response.data['streak'] ?? 0,
+              'level': response.data['level'] ?? 1,
+              'exp': response.data['exp'] ?? 0,
+            };
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('멘토 정보 조회 오류: ${e.toString()}')));
       }
     }
   }
@@ -187,6 +234,9 @@ class _LobbyPageState extends State<LobbyPage> {
 
               // 멘토인 경우 멘티 목록 표시
               if (_role == 'mentor') ..._buildMenteeSection(),
+
+              // 멘티인 경우 멘토 정보 표시
+              if (_role == 'mentee') ..._buildMentorSection(),
 
               // 일일 퀘스트 섹션
               const Text(
@@ -472,7 +522,119 @@ class _LobbyPageState extends State<LobbyPage> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            const CircleAvatar(radius: 25, child: Icon(Icons.person, size: 30)),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProfilePage(username: username),
+                  ),
+                );
+              },
+              child: const CircleAvatar(
+                radius: 25,
+                child: Icon(Icons.person, size: 30),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    username,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.local_fire_department,
+                        size: 16,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(width: 4),
+                      Text('$streak일'),
+                      const SizedBox(width: 16),
+                      const Icon(Icons.star, size: 16, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text('Lv.$level'),
+                      const SizedBox(width: 16),
+                      const Icon(
+                        Icons.trending_up,
+                        size: 16,
+                        color: Colors.blue,
+                      ),
+                      const SizedBox(width: 4),
+                      Text('EXP $exp'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildMentorSection() {
+    return [
+      const Text(
+        '나의 멘토',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 12),
+      if (_mentor == null)
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Center(
+              child: Text(
+                '아직 멘토가 지정되지 않았습니다.',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+            ),
+          ),
+        )
+      else
+        _buildMentorCard(
+          _mentor!['username'],
+          _mentor!['streak'],
+          _mentor!['level'],
+          _mentor!['exp'],
+        ),
+      const SizedBox(height: 24),
+    ];
+  }
+
+  Widget _buildMentorCard(String username, int streak, int level, int exp) {
+    return Card(
+      elevation: 4,
+      color: const Color(0xFFFFF3E0),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProfilePage(username: username),
+                  ),
+                );
+              },
+              child: const CircleAvatar(
+                radius: 25,
+                backgroundColor: Colors.orange,
+                child: Icon(Icons.person, size: 30, color: Colors.white),
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

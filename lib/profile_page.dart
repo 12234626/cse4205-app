@@ -3,7 +3,9 @@ import 'constants.dart';
 import 'services/api_service.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final String? username;
+
+  const ProfilePage({super.key, this.username});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -36,7 +38,12 @@ class _ProfilePageState extends State<ProfilePage>
 
   Future<void> _loadUserProfile() async {
     try {
-      final response = await ApiService.get('/api/user/profile');
+      // username이 있으면 해당 사용자의 프로필을, 없으면 본인 프로필 조회
+      final endpoint = widget.username != null
+          ? '/api/user/profile/username/${widget.username}'
+          : '/api/user/profile';
+
+      final response = await ApiService.get(endpoint);
 
       if (response.success && response.data != null) {
         if (mounted) {
