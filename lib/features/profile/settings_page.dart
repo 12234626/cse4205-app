@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
-import 'services/api_service.dart';
+import '../../common/constants.dart';
+import '../../services/api_service.dart';
+import '../../services/auth_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -71,7 +72,6 @@ class _SettingsPageState extends State<SettingsPage> {
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop(); // 다이얼로그 닫기
-                await ApiService.setToken(null, null); // 토큰 삭제
                 if (mounted) {
                   Navigator.pushNamedAndRemoveUntil(
                     context,
@@ -127,13 +127,19 @@ class _SettingsPageState extends State<SettingsPage> {
 
       final userId = profileResponse.data['userId'];
 
+      // 소셜 로그인 로그아웃 처리 (오류 무시)
+      try {
+        await AuthService.logoutAll();
+      } catch (e) {
+        // 오류 발생해도 계속 진행
+      }
+
       // 회원 탈퇴 API 호출
       final response = await ApiService.delete('/api/user/$userId');
 
       if (mounted) {
         // 204 No Content는 성공으로 처리
         if (response.success || response.statusCode == 204) {
-          await ApiService.setToken(null, null); // 토큰 삭제
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('회원 탈퇴가 완료되었습니다.')));

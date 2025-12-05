@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
+import '../../common/constants.dart';
 
 class SignupMethodPage extends StatelessWidget {
   const SignupMethodPage({super.key});
@@ -21,13 +21,10 @@ class SignupMethodPage extends StatelessWidget {
               children: [
                 const Text(
                   '로그인 방법',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 40),
-                
+
                 // 로그인 방법 설명
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -39,7 +36,9 @@ class SignupMethodPage extends StatelessWidget {
                         color: Colors.amber,
                         shape: BoxShape.circle,
                       ),
-                      child: const Center(child: Text('P', style: TextStyle(fontSize: 40))),
+                      child: const Center(
+                        child: Text('P', style: TextStyle(fontSize: 40)),
+                      ),
                     ),
                     const SizedBox(width: 20),
                     const Icon(Icons.arrow_forward, size: 40),
@@ -51,14 +50,19 @@ class SignupMethodPage extends StatelessWidget {
                         color: Colors.blue,
                         shape: BoxShape.circle,
                       ),
-                      child: const Center(child: Text('P', style: TextStyle(fontSize: 40, color: Colors.white))),
+                      child: const Center(
+                        child: Text(
+                          'P',
+                          style: TextStyle(fontSize: 40, color: Colors.white),
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
                 const Text('로그인 방법'),
                 const SizedBox(height: 60),
-                
+
                 // 구글 로그인 버튼
                 Card(
                   color: const Color(0xFFE8D5F2),
@@ -71,7 +75,7 @@ class SignupMethodPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 // 카카오 로그인 버튼
                 Card(
                   color: const Color(0xFFE8D5F2),
@@ -84,7 +88,7 @@ class SignupMethodPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 40),
-                
+
                 // 시작하기 버튼
                 SizedBox(
                   width: double.infinity,

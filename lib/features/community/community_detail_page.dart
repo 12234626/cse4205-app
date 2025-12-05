@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'constants.dart';
-import 'models/community_post_model.dart';
-import 'models/comment_model.dart';
-import 'services/comment_storage.dart';
+import '../../common/constants.dart';
+import '../../models/community_post_model.dart';
+import '../../models/comment_model.dart';
+import '../../services/comment_storage.dart';
 
 class CommunityDetailPage extends StatefulWidget {
   final CommunityPost post;

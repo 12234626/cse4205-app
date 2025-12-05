@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'constants.dart';
-import 'models/guideline_post_model.dart';
-import 'services/guideline_storage.dart';
+import '../../common/constants.dart';
+import '../../models/guideline_post_model.dart';
+import '../../services/guideline_storage.dart';
 
 class GuidelineWritePage extends StatefulWidget {
   final GuidelinePost? postToEdit;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
-import 'services/api_service.dart';
+import '../../common/constants.dart';
+import '../../services/api_service.dart';
 
 class ProfilePage extends StatefulWidget {
   final String? username;

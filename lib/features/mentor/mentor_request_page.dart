@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
-import 'services/api_service.dart';
+import '../../common/constants.dart';
+import '../../services/api_service.dart';
 
 class MentorRequestPage extends StatefulWidget {
   const MentorRequestPage({super.key});

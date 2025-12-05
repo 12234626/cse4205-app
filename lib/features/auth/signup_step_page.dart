@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'constants.dart';
-import 'services/auth_service.dart';
-import 'services/api_service.dart';
+import '../../common/constants.dart';
+import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
 
 class SignupStepPage extends StatefulWidget {
   final String? provider;

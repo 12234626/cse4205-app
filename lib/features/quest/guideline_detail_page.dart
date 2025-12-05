@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'dart:io';
-import 'constants.dart';
-import 'models/guideline_post_model.dart';
-import 'models/comment_model.dart';
-import 'services/guideline_storage.dart';
-import 'services/comment_storage.dart';
+import '../../common/constants.dart';
+import '../../models/guideline_post_model.dart';
+import '../../models/comment_model.dart';
+import '../../services/guideline_storage.dart';
+import '../../services/comment_storage.dart';
 import 'guideline_write_page.dart';
 
 class GuidelineDetailPage extends StatefulWidget {

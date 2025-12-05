@@ -3,15 +3,15 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
-import 'social_login_page.dart';
-import 'signup_method_page.dart';
-import 'signup_info_page.dart';
-import 'lobby_page.dart';
-import 'lobby_parent_page.dart';
-import 'profile_page.dart';
-import 'guidelines.dart';
-import 'settings_page.dart';
-import 'constants.dart';
+import 'features/auth/social_login_page.dart';
+import 'features/auth/signup_method_page.dart';
+import 'features/auth/signup_info_page.dart';
+import 'features/lobby/lobby_page.dart';
+import 'features/lobby/lobby_parent_page.dart';
+import 'features/profile/profile_page.dart';
+import 'features/quest/guidelines.dart';
+import 'features/profile/settings_page.dart';
+import 'common/constants.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

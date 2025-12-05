@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
-import 'models/community_post_model.dart';
+import '../../common/constants.dart';
+import '../../models/community_post_model.dart';
 import 'community_detail_page.dart';
 import 'community_write_page.dart';
 
