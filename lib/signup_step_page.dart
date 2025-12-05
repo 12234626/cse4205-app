@@ -104,9 +104,9 @@ class _SignupStepPageState extends State<SignupStepPage> {
         '/api/user/profile/username/$nickname',
       );
 
-      bool isAvailable = false;
+      bool isAvailable = true;
       if (response.success) {
-        isAvailable = true;
+        isAvailable = false;
       }
 
       setState(() {

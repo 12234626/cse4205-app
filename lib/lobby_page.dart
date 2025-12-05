@@ -480,9 +480,19 @@ class _LobbyPageState extends State<LobbyPage> {
 
   List<Widget> _buildMenteeSection() {
     return [
-      const Text(
-        '관리 중인 멘티',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            '관리 중인 멘티',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadMentees,
+            tooltip: '새로고침',
+          ),
+        ],
       ),
       const SizedBox(height: 12),
       if (_mentees.isEmpty)
@@ -583,9 +593,19 @@ class _LobbyPageState extends State<LobbyPage> {
 
   List<Widget> _buildMentorSection() {
     return [
-      const Text(
-        '나의 멘토',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            '나의 멘토',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadMentor,
+            tooltip: '새로고침',
+          ),
+        ],
       ),
       const SizedBox(height: 12),
       if (_mentor == null)

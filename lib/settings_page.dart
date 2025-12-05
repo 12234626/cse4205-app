@@ -69,13 +69,16 @@ class _SettingsPageState extends State<SettingsPage> {
               child: const Text('아니오'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop(); // 다이얼로그 닫기
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/',
-                  (route) => false,
-                ); // 로그인 페이지로 이동
+                await ApiService.setToken(null, null); // 토큰 삭제
+                if (mounted) {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/',
+                    (route) => false,
+                  ); // 로그인 페이지로 이동
+                }
               },
               child: const Text('예'),
             ),
@@ -83,6 +86,71 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       },
     );
+  }
+
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('회원 탈퇴'),
+          content: const Text('정말로 탈퇴하시겠습니까?\n모든 데이터가 삭제되며 복구할 수 없습니다.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('탈퇴'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      // 현재 사용자 정보 가져오기
+      final profileResponse = await ApiService.get('/api/user/profile');
+
+      if (!profileResponse.success || profileResponse.data == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('사용자 정보를 가져올 수 없습니다.')));
+        }
+        return;
+      }
+
+      final userId = profileResponse.data['userId'];
+
+      // 회원 탈퇴 API 호출
+      final response = await ApiService.delete('/api/user/$userId');
+
+      if (mounted) {
+        // 204 No Content는 성공으로 처리
+        if (response.success || response.statusCode == 204) {
+          await ApiService.setToken(null, null); // 토큰 삭제
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('회원 탈퇴가 완료되었습니다.')));
+          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.message ?? '회원 탈퇴에 실패했습니다.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: ${e.toString()}')));
+      }
+    }
   }
 
   @override
@@ -234,6 +302,16 @@ class _SettingsPageState extends State<SettingsPage> {
               leading: Icon(Icons.logout, color: Colors.grey[700]),
               title: const Text('로그아웃', style: TextStyle(fontSize: 16)),
               onTap: _showLogoutDialog,
+            ),
+
+            // 회원 탈퇴 버튼
+            ListTile(
+              leading: const Icon(Icons.person_remove, color: Colors.red),
+              title: const Text(
+                '회원 탈퇴',
+                style: TextStyle(fontSize: 16, color: Colors.red),
+              ),
+              onTap: _deleteAccount,
             ),
           ],
         ),
