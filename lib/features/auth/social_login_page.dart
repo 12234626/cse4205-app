@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
-import 'services/auth_service.dart';
+import '../../common/constants.dart';
+import '../../services/auth_service.dart';
 import 'signup_step_page.dart';
 
 class SocialLoginPage extends StatefulWidget {

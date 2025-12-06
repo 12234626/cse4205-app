@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
-import 'models/guideline_post_model.dart';
-import 'services/guideline_storage.dart';
+import '../../common/constants.dart';
+import '../../models/guideline_post_model.dart';
+import '../../services/guideline_storage.dart';
 import 'guideline_write_page.dart';
 import 'guideline_detail_page.dart';
 import 'dart:io';

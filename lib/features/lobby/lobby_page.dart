@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
-import 'guideline_detail_page.dart';
-import 'models/guideline_post_model.dart';
-import 'carbon_survey_page.dart';
-import 'guidelines.dart';
-import 'community_page.dart';
-import 'services/api_service.dart';
-import 'mentor_request_page.dart';
-import 'mentor_request_management_page.dart';
-import 'profile_page.dart';
+import '../../common/constants.dart';
+import '../guide/guideline_detail_page.dart';
+import '../../models/guideline_post_model.dart';
+import '../survey/carbon_survey_page.dart';
+import '../guide/guidelines.dart';
+import '../community/community_page.dart';
+import '../../services/api_service.dart';
+import '../mentor/mentor_request_page.dart';
+import '../mentor/mentor_request_management_page.dart';
+import '../profile/profile_page.dart';
 
 class LobbyPage extends StatefulWidget {
   const LobbyPage({super.key});

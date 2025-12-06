@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
+import '../../common/constants.dart';
 
 class OnboardingSurveyPage extends StatefulWidget {
   const OnboardingSurveyPage({super.key});
