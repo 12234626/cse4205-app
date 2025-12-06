@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
 import '../../common/constants.dart';
 import '../guide/guideline_detail_page.dart';
@@ -74,28 +75,36 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     try {
       final response = await ApiService.post('/api/user-quest/daily/assign');
 
-      print('=== Daily Quest API Response ===');
-      print('Status Code: ${response.statusCode}');
-      print('Success: ${response.success}');
-      print('Data: ${response.data}');
-      print('Error: ${response.error}');
-      print('Message: ${response.message}');
-      print('================================');
+      if (kDebugMode) {
+        print('=== Daily Quest API Response ===');
+        print('Status Code: ${response.statusCode}');
+        print('Success: ${response.success}');
+        print('Data: ${response.data}');
+        print('Error: ${response.error}');
+        print('Message: ${response.message}');
+        print('================================');
+      }
 
       if (response.success && response.data != null) {
         if (mounted) {
           setState(() {
             _dailyQuests = (response.data as List)
                 .map((userQuest) {
-                  print('UserQuest item: $userQuest');
-                  print('UserQuest keys: ${userQuest.keys}');
+                  if (kDebugMode) {
+                    print('UserQuest item: $userQuest');
+                    print('UserQuest keys: ${userQuest.keys}');
+                  }
                   
                   // quest 객체가 있는지 확인하고 안전하게 파싱
                   final quest = userQuest['quest'];
-                  print('Quest object: $quest');
+                  if (kDebugMode) {
+                    print('Quest object: $quest');
+                  }
                   
                   if (quest == null) {
-                    print('WARNING: quest is null for userQuestId: ${userQuest['userQuestId']}');
+                    if (kDebugMode) {
+                      print('WARNING: quest is null for userQuestId: ${userQuest['userQuestId']}');
+                    }
                     return null;
                   }
                   
@@ -131,14 +140,18 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
             
             _isLoadingQuests = false;
             
-            print('Parsed quests count: ${_dailyQuests.length}');
-            print('Parsed quests: $_dailyQuests');
+            if (kDebugMode) {
+              print('Parsed quests count: ${_dailyQuests.length}');
+              print('Parsed quests: $_dailyQuests');
+            }
           });
         }
       } else {
-        print('API response failed');
-        print('Error details: ${response.error}');
-        print('Message details: ${response.message}');
+        if (kDebugMode) {
+          print('API response failed');
+          print('Error details: ${response.error}');
+          print('Message details: ${response.message}');
+        }
         if (mounted) {
           setState(() => _isLoadingQuests = false);
           
@@ -153,8 +166,10 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
         }
       }
     } catch (e, stackTrace) {
-      print('Error loading daily quests: $e');
-      print('Stack trace: $stackTrace');
+      if (kDebugMode) {
+        print('Error loading daily quests: $e');
+        print('Stack trace: $stackTrace');
+      }
       if (mounted) {
         setState(() => _isLoadingQuests = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -379,7 +394,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                                         vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.7),
+                                        color: Colors.white.withValues(alpha: 0.7),
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Row(
@@ -408,7 +423,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                               // 오른쪽 레벨 아이콘 (큰 버전)
                               Icon(
                                 _getLevelIcon(_level),
-                                color: _getLevelColor(_level).withOpacity(0.3),
+                                color: _getLevelColor(_level).withValues(alpha: 0.3),
                                 size: 50,
                               ),
                             ],
