@@ -21,9 +21,9 @@ jobs:
         run: |
           echo "$ENV_FILE" > .env
           echo "$STRINGS_XML" > android/app/src/main/res/values/strings.xml
-          echo "$GOOGLE_SERVICES_JSON" > android/app/src/google-services.json
-          echo "$KEY_PROPERTIES" > android/app/src/key.properties
-          echo "$ANDROID_KEYSTORE" | base64 --decode > android/app/src/release.keystore
+          echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          echo "$KEY_PROPERTIES" > android/app/key.properties
+          echo "$ANDROID_KEYSTORE" | base64 --decode > android/app/release.keystore
 
       - uses: subosito/flutter-action@v2
         with:
