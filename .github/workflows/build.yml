@@ -29,6 +29,10 @@ jobs:
         with:
           flutter-version: "3.35.7"
 
+      - run: |
+          flutter pub get
+          flutter build apk --release
+
       - uses: actions/upload-artifact@v5
         with:
           name: build-android
