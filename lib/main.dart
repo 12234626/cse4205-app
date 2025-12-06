@@ -9,7 +9,7 @@ import 'features/auth/signup_info_page.dart';
 import 'features/lobby/lobby_page.dart';
 import 'features/lobby/lobby_parent_page.dart';
 import 'features/profile/profile_page.dart';
-import 'features/quest/guidelines.dart';
+import 'features/guide/guidelines.dart';
 import 'features/profile/settings_page.dart';
 import 'common/constants.dart';
 

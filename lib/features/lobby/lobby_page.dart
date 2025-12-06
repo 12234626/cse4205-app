@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../common/constants.dart';
-import '../quest/guideline_detail_page.dart';
+import '../guide/guideline_detail_page.dart';
 import '../../models/guideline_post_model.dart';
 import '../survey/carbon_survey_page.dart';
-import '../quest/guidelines.dart';
+import '../guide/guidelines.dart';
 import '../community/community_page.dart';
 import '../../services/api_service.dart';
 import '../mentor/mentor_request_page.dart';
