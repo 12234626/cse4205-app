@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:math' as math;
 import '../../common/constants.dart';
 import '../guide/guideline_detail_page.dart';
 import '../../models/guideline_post_model.dart';
@@ -17,7 +19,7 @@ class LobbyPage extends StatefulWidget {
   State<LobbyPage> createState() => _LobbyPageState();
 }
 
-class _LobbyPageState extends State<LobbyPage> {
+class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   String _username = '사용자';
   int _streak = 0;
   int _level = 1;
@@ -25,11 +27,121 @@ class _LobbyPageState extends State<LobbyPage> {
   List<Map<String, dynamic>> _mentees = [];
   Map<String, dynamic>? _mentor;
   bool _isLoading = true;
+  List<Map<String, dynamic>> _dailyQuests = [];
+  bool _isLoadingQuests = false;
+  
+  late AnimationController _waveController;
+  late Animation<double> _waveAnimation;
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+    _loadDailyQuests();
+    
+    // 파도 애니메이션 (6초)
+    _waveController = AnimationController(
+      duration: const Duration(seconds: 6),
+      vsync: this,
+    );
+    
+    _waveAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _waveController, curve: Curves.easeInOut),
+    );
+    
+    // 애니메이션 시퀀스 시작
+    _startAnimationSequence();
+  }
+  
+  void _startAnimationSequence() async {
+    while (mounted) {
+      // 파도 애니메이션 실행
+      await _waveController.forward();
+      _waveController.reset();
+      
+      await Future.delayed(const Duration(seconds: 6));
+    }
+  }
+  
+  @override
+  void dispose() {
+    _waveController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadDailyQuests() async {
+    setState(() => _isLoadingQuests = true);
+
+    try {
+      final response = await ApiService.post('/api/user-quest/daily/assign');
+
+      if (response.success && response.data != null) {
+        if (mounted) {
+          setState(() {
+            _dailyQuests = (response.data as List)
+                .map((userQuest) {
+                  // quest 객체가 있는지 확인하고 안전하게 파싱
+                  final quest = userQuest['quest'];
+                  
+                  if (quest == null) {
+                    return null;
+                  }
+                  
+                  return {
+                    'userQuestId': userQuest['userQuestId'],
+                    'questId': quest['questId'],
+                    'title': quest['title'] ?? '퀘스트',
+                    'expReward': quest['expReward'] ?? 0,
+                    'status': userQuest['status'] ?? 'PENDING',
+                    'completedAt': userQuest['completedAt'],
+                  };
+                })
+                .where((quest) => quest != null)
+                .cast<Map<String, dynamic>>()
+                .toList();
+            
+            // 퀘스트 정렬: 출석 -> 인증 -> 나머지
+            _dailyQuests.sort((a, b) {
+              final titleA = a['title'] as String;
+              final titleB = b['title'] as String;
+              
+              // 출석이 최우선
+              if (titleA.contains('출석')) return -1;
+              if (titleB.contains('출석')) return 1;
+              
+              // 그 다음 인증
+              if (titleA.contains('인증')) return -1;
+              if (titleB.contains('인증')) return 1;
+              
+              // 나머지는 원래 순서 유지
+              return 0;
+            });
+            
+            _isLoadingQuests = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() => _isLoadingQuests = false);
+          
+          // 에러 메시지를 더 구체적으로 표시
+          final errorMsg = response.message?.toString() ?? 
+                          response.error?.toString() ?? 
+                          '퀘스트 정보를 불러오지 못했습니다.';
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('퀘스트 로딩 실패: $errorMsg')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingQuests = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('퀘스트 로딩 오류: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -144,16 +256,21 @@ class _LobbyPageState extends State<LobbyPage> {
             },
           ),
         ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/images/tmplogo.png',
-              height: 40,
-              width: 40,
-              fit: BoxFit.contain,
-            ),
-          ],
+        title: AnimatedBuilder(
+          animation: _waveAnimation,
+          builder: (context, child) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildAnimatedLetter('C', 0),
+                _buildAnimatedLetter('O', 1),
+                _buildAnimatedSubscript('2'),
+                _buildAnimatedLetter('D', 2),
+                _buildAnimatedLetter('a', 3),
+                _buildAnimatedLetter('y', 4),
+              ],
+            );
+          },
         ),
         centerTitle: false,
         actions: [
@@ -174,59 +291,108 @@ class _LobbyPageState extends State<LobbyPage> {
               // 사용자 정보 카드
               Card(
                 elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: InkWell(
                   onTap: () {
                     Navigator.pushNamed(context, '/profile');
                   },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      children: [
-                        const CircleAvatar(
-                          radius: 30,
-                          child: Icon(Icons.person, size: 35),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _isLoading
-                              ? const Center(
-                                  child: SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                )
-                              : Column(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color(0xFFF1F8E9), // 매우 연한 연두
+                          const Color(0xFFFFF9C4), // 매우 연한 노랑
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                    child: _isLoading
+                        ? const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Colors.blue[400],
+                                child: const Icon(Icons.person, size: 45, color: Colors.white),
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    // 레벨
                                     Text(
-                                      '안녕 $_username!',
-                                      style: const TextStyle(
-                                        fontSize: 18,
+                                      'Lv. $_level',
+                                      style: TextStyle(
+                                        fontSize: 16,
                                         fontWeight: FontWeight.bold,
+                                        color: Colors.grey[700],
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        Text('$_streak일 연속 해결!'),
-                                        const SizedBox(width: 16),
-                                        const Icon(
-                                          Icons.star,
-                                          color: Colors.amber,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text('레벨 $_level'),
-                                      ],
+                                    const SizedBox(height: 6),
+                                    // 사용자 닉네임
+                                    Text(
+                                      _username,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    // 스트릭 정보
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.7),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.local_fire_department,
+                                            color: Colors.deepOrange,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '$_streak일 연속 달성!',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.grey[800],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
-                        ),
-                      ],
-                    ),
+                              ),
+                              // 오른쪽 레벨 아이콘 (큰 버전)
+                              Icon(
+                                _getLevelIcon(_level),
+                                color: _getLevelColor(_level).withValues(alpha: 0.3),
+                                size: 50,
+                              ),
+                            ],
+                          ),
                   ),
                 ),
               ),
@@ -239,18 +405,52 @@ class _LobbyPageState extends State<LobbyPage> {
               if (_role == 'mentee') ..._buildMentorSection(),
 
               // 일일 퀘스트 섹션
-              const Text(
-                '일일 퀘스트',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '일일 퀘스트',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: _loadDailyQuests,
+                    tooltip: '퀘스트 새로고침',
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
-              _buildQuestCard('일일 출석하기', '+10'),
-              const SizedBox(height: 8),
-              _buildQuestCard('분리수거하기', '+30'),
-              const SizedBox(height: 8),
-              _buildQuestCard('목적지까지 걸어가기', '+20'),
-              const SizedBox(height: 8),
-              _buildQuestCard('소등하기', '+40'),
+              if (_isLoadingQuests)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (_dailyQuests.isEmpty)
+                Card(
+                  elevation: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: Text(
+                        '오늘의 퀘스트를 불러올 수 없습니다.',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                ..._dailyQuests.map((quest) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: _buildQuestCard(
+                      quest['title'],
+                      '+${quest['expReward']}',
+                      isCompleted: quest['status'] == 'completed',
+                    ),
+                  );
+                }),
               const SizedBox(height: 24),
 
               // 하단 메뉴
@@ -388,7 +588,110 @@ class _LobbyPageState extends State<LobbyPage> {
     );
   }
 
-  Widget _buildQuestCard(String title, String? points) {
+  // 애니메이션이 적용된 글자 위젯
+  Widget _buildAnimatedLetter(String letter, int index) {
+    // 파도 애니메이션: 위아래로 미세하게 움직임
+    final offset = math.sin((_waveAnimation.value * 2 * math.pi) + (index * math.pi / 5)) * 2;
+    
+    return Transform.translate(
+      offset: Offset(0, offset),
+      child: ShaderMask(
+        shaderCallback: (bounds) => const LinearGradient(
+          colors: [Colors.white, Color(0xFFE0F7FA)],
+        ).createShader(bounds),
+        child: Text(
+          letter,
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // CO2의 2를 작게 표시
+  Widget _buildAnimatedSubscript(String letter) {
+    // 파도 애니메이션
+    final offset = math.sin((_waveAnimation.value * 2 * math.pi) + (1.5 * math.pi / 5)) * 2;
+    
+    return Transform.translate(
+      offset: Offset(0, offset + 8),
+      child: ShaderMask(
+        shaderCallback: (bounds) => const LinearGradient(
+          colors: [Colors.white, Color(0xFFE0F7FA)],
+        ).createShader(bounds),
+        child: Text(
+          letter,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 레벨에 따른 아이콘 반환
+  IconData _getLevelIcon(int level) {
+    if (level >= 25) {
+      return Icons.emoji_events; // 트로피 (25-30)
+    } else if (level >= 20) {
+      return Icons.workspace_premium; // 프리미엄 배지 (20-24)
+    } else if (level >= 15) {
+      return Icons.military_tech; // 메달 (15-19)
+    } else if (level >= 10) {
+      return Icons.shield; // 실드 (10-14)
+    } else if (level >= 5) {
+      return Icons.star; // 별 (5-9)
+    } else {
+      return Icons.stars; // 작은 별들 (1-4)
+    }
+  }
+
+  // 레벨에 따른 색상 반환
+  Color _getLevelColor(int level) {
+    if (level >= 25) {
+      return const Color(0xFFFFD700); // 금색 (25-30)
+    } else if (level >= 20) {
+      return const Color(0xFFE6E6FA); // 라벤더 (20-24)
+    } else if (level >= 15) {
+      return const Color(0xFFFFA500); // 오렌지 (15-19)
+    } else if (level >= 10) {
+      return const Color(0xFF4169E1); // 로얄블루 (10-14)
+    } else if (level >= 5) {
+      return Colors.amber; // 호박색 (5-9)
+    } else {
+      return Colors.grey[600]!; // 회색 (1-4)
+    }
+  }
+
+  // 퀘스트 제목에 따라 적절한 아이콘 반환
+  IconData _getQuestIcon(String title) {
+    if (title.contains('출석')) {
+      return Icons.check_circle; // 출석 체크
+    } else if (title.contains('인증') || title.contains('게시글') || title.contains('확인')) {
+      return Icons.thumb_up; // 따봉 (인증/검증)
+    } else if (title.contains('분리수거')) {
+      return Icons.recycling; // 재활용
+    } else if (title.contains('도보') || title.contains('자전거') || title.contains('대중교통')) {
+      return Icons.directions_walk; // 이동
+    } else if (title.contains('대기전력') || title.contains('전력')) {
+      return Icons.power_off; // 전력
+    } else if (title.contains('텀블러') || title.contains('컵')) {
+      return Icons.coffee; // 텀블러/컵
+    } else if (title.contains('음식물') || title.contains('남기지')) {
+      return Icons.restaurant; // 음식
+    } else if (title.contains('세탁')) {
+      return Icons.local_laundry_service; // 세탁
+    } else {
+      return Icons.eco; // 기본 친환경 아이콘
+    }
+  }
+
+  Widget _buildQuestCard(String title, String? points, {bool isCompleted = false}) {
     return Card(
       elevation: 6,
       child: Container(
@@ -400,38 +703,64 @@ class _LobbyPageState extends State<LobbyPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           child: Row(
             children: [
-              const Icon(Icons.attach_file, color: Colors.grey),
+              Icon(_getQuestIcon(title), color: Colors.green[700], size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: title.length > 15 ? 14 : 16,
                     fontWeight: FontWeight.bold,
+                    height: 1.3,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (points != null)
-                ElevatedButton(
-                  onPressed: () {
-                    // 퀘스트 완료 처리
-                  },
-                  style: ElevatedButton.styleFrom(
-                    elevation: 6,
-                    shadowColor: Color.fromRGBO(0, 0, 0, 0.4),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Text(
-                    points,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
+                isCompleted
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber[700],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          '완료',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      )
+                    : ElevatedButton(
+                        onPressed: () {
+                          // 퀘스트 완료 처리 (추후 구현)
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('퀘스트 완료 기능은 추후 구현 예정입니다.'),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          elevation: 6,
+                          shadowColor: Color.fromRGBO(0, 0, 0, 0.4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: Text(
+                          points,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
             ],
           ),
         ),
