@@ -75,36 +75,15 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     try {
       final response = await ApiService.post('/api/user-quest/daily/assign');
 
-      if (kDebugMode) {
-        print('=== Daily Quest API Response ===');
-        print('Status Code: ${response.statusCode}');
-        print('Success: ${response.success}');
-        print('Data: ${response.data}');
-        print('Error: ${response.error}');
-        print('Message: ${response.message}');
-        print('================================');
-      }
-
       if (response.success && response.data != null) {
         if (mounted) {
           setState(() {
             _dailyQuests = (response.data as List)
                 .map((userQuest) {
-                  if (kDebugMode) {
-                    print('UserQuest item: $userQuest');
-                    print('UserQuest keys: ${userQuest.keys}');
-                  }
-                  
                   // quest 객체가 있는지 확인하고 안전하게 파싱
                   final quest = userQuest['quest'];
-                  if (kDebugMode) {
-                    print('Quest object: $quest');
-                  }
                   
                   if (quest == null) {
-                    if (kDebugMode) {
-                      print('WARNING: quest is null for userQuestId: ${userQuest['userQuestId']}');
-                    }
                     return null;
                   }
                   
@@ -139,19 +118,9 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
             });
             
             _isLoadingQuests = false;
-            
-            if (kDebugMode) {
-              print('Parsed quests count: ${_dailyQuests.length}');
-              print('Parsed quests: $_dailyQuests');
-            }
           });
         }
       } else {
-        if (kDebugMode) {
-          print('API response failed');
-          print('Error details: ${response.error}');
-          print('Message details: ${response.message}');
-        }
         if (mounted) {
           setState(() => _isLoadingQuests = false);
           
@@ -165,11 +134,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
           );
         }
       }
-    } catch (e, stackTrace) {
-      if (kDebugMode) {
-        print('Error loading daily quests: $e');
-        print('Stack trace: $stackTrace');
-      }
+    } catch (e) {
       if (mounted) {
         setState(() => _isLoadingQuests = false);
         ScaffoldMessenger.of(context).showSnackBar(
