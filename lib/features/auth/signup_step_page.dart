@@ -30,7 +30,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
   // 멘토 닉네임 관련
   final TextEditingController _mentorNicknameController =
       TextEditingController();
-  int? _mentorUserId;
+  String? _mentorNickname;
   String? _mentorNicknameErrorMessage;
   bool _isMentorNicknameValid = false;
 
@@ -158,7 +158,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
         setState(() {
           _mentorNicknameErrorMessage = '해당 닉네임의 사용자를 찾을 수 없습니다.';
           _isMentorNicknameValid = false;
-          _mentorUserId = null;
+          _mentorNickname = null;
           _isLoading = false;
         });
         return;
@@ -168,14 +168,11 @@ class _SignupStepPageState extends State<SignupStepPage> {
       final userData = response.data;
       final userRole = userData['role'];
 
-      // userId 필드명 확인 (userId 또는 id)
-      final userId = userData['userId'] ?? userData['id'];
-
-      if (userId == null) {
+      if (userRole == null) {
         setState(() {
           _mentorNicknameErrorMessage = '사용자 정보를 가져올 수 없습니다.';
           _isMentorNicknameValid = false;
-          _mentorUserId = null;
+          _mentorNickname = null;
           _isLoading = false;
         });
         return;
@@ -186,7 +183,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
         setState(() {
           _mentorNicknameErrorMessage = '해당 사용자는 멘토가 아닙니다.';
           _isMentorNicknameValid = false;
-          _mentorUserId = null;
+          _mentorNickname = null;
           _isLoading = false;
         });
         return;
@@ -196,7 +193,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
       setState(() {
         _mentorNicknameErrorMessage = null;
         _isMentorNicknameValid = true;
-        _mentorUserId = userId;
+        _mentorNickname = mentorNickname;
         _selectedRole = 'mentee'; // 멘토를 입력한 경우 자동으로 mentee로 설정
         _isLoading = false;
       });
@@ -208,7 +205,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
         setState(() {
           _mentorNicknameErrorMessage = '멘토 확인 중 오류가 발생했습니다.';
           _isMentorNicknameValid = false;
-          _mentorUserId = null;
+          _mentorNickname = null;
           _isLoading = false;
         });
       }
@@ -273,11 +270,11 @@ class _SignupStepPageState extends State<SignupStepPage> {
       if (!mounted) return;
 
       // 멘토 닉네임을 입력했고 유효한 경우, 멘토 요청 전송
-      if (_mentorUserId != null && _isMentorNicknameValid) {
+      if (_mentorNickname != null && _isMentorNicknameValid) {
         try {
           final requestResponse = await ApiService.post(
             '/api/user/mentor-request',
-            body: {'mentorId': _mentorUserId},
+            body: {'otherUsername': _mentorNickname},
           );
 
           if (!mounted) return;
@@ -583,7 +580,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
               setState(() {
                 _mentorNicknameErrorMessage = null;
                 _isMentorNicknameValid = false;
-                _mentorUserId = null;
+                _mentorNickname = null;
               });
             },
           ),
@@ -640,7 +637,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                         _mentorNicknameController.clear();
                         _mentorNicknameErrorMessage = null;
                         _isMentorNicknameValid = false;
-                        _mentorUserId = null;
+                        _mentorNickname = null;
                       });
                       _nextStep();
                     },
@@ -677,7 +674,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
 
           // mentee (학생) 선택
           InkWell(
-            onTap: _mentorUserId != null
+            onTap: _mentorNickname != null
                 ? null
                 : () => setState(() => _selectedRole = 'mentee'),
             child: Container(
@@ -739,9 +736,9 @@ class _SignupStepPageState extends State<SignupStepPage> {
 
           // mentor (학부모/멘토) 선택
           Opacity(
-            opacity: _mentorUserId != null ? 0.5 : 1.0,
+            opacity: _mentorNickname != null ? 0.5 : 1.0,
             child: InkWell(
-              onTap: _mentorUserId != null
+              onTap: _mentorNickname != null
                   ? null
                   : () => setState(() => _selectedRole = 'mentor'),
               child: Container(
@@ -800,7 +797,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
               ),
             ),
           ),
-          if (_mentorUserId != null)
+          if (_mentorNickname != null)
             Padding(
               padding: const EdgeInsets.only(top: 16.0),
               child: Container(

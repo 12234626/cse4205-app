@@ -23,17 +23,18 @@ class _MentorRequestManagementPageState
 
   Future<void> _loadRequests() async {
     try {
-      final response = await ApiService.get(
-        '/api/user/mentor-request/received',
-      );
+      final response = await ApiService.get('/api/user/mentor-request/mentor');
 
       if (mounted) {
         if (response.success && response.data != null) {
+          // response.data가 List인지 확인
+          final dataList = response.data is List ? response.data as List : [];
+
           setState(() {
             _requests = List<Map<String, dynamic>>.from(
-              response.data.map(
+              dataList.map(
                 (req) => {
-                  'id': req['id'] ?? req['mentorRequestId'],
+                  'id': req['mentorRequestId'],
                   'menteeUsername': req['mentee']?['username'] ?? '알 수 없음',
                   'status': (req['status'] ?? 'pending')
                       .toString()
@@ -63,17 +64,13 @@ class _MentorRequestManagementPageState
 
     try {
       final endpoint = accept
-          ? '/api/user/mentor-request/$requestId/accept'
-          : '/api/user/mentor-request/$requestId/reject';
+          ? '/api/user/mentor-request/accept/$requestId'
+          : '/api/user/mentor-request/reject/$requestId';
 
       final response = await ApiService.put(endpoint);
 
       if (mounted) {
-        // statusCode가 200-299 범위면 성공으로 간주
-        final isSuccess =
-            response.statusCode >= 200 && response.statusCode < 300;
-
-        if (isSuccess || response.success) {
+        if (response.success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(accept ? '요청을 수락했습니다.' : '요청을 거절했습니다.')),
           );

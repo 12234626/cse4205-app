@@ -10,6 +10,8 @@ import '../community/community_page.dart';
 import '../../services/api_service.dart';
 import '../mentor/mentor_request_page.dart';
 import '../mentor/mentor_request_management_page.dart';
+import '../mentor/remove_mentor_page.dart';
+import '../mentor/remove_mentee_page.dart';
 import '../profile/profile_page.dart';
 
 class LobbyPage extends StatefulWidget {
@@ -29,7 +31,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   bool _isLoading = true;
   List<Map<String, dynamic>> _dailyQuests = [];
   bool _isLoadingQuests = false;
-  
+
   late AnimationController _waveController;
   late Animation<double> _waveAnimation;
 
@@ -38,31 +40,31 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     super.initState();
     _loadUserProfile();
     _loadDailyQuests();
-    
+
     // 파도 애니메이션 (6초)
     _waveController = AnimationController(
       duration: const Duration(seconds: 6),
       vsync: this,
     );
-    
+
     _waveAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _waveController, curve: Curves.easeInOut),
     );
-    
+
     // 애니메이션 시퀀스 시작
     _startAnimationSequence();
   }
-  
+
   void _startAnimationSequence() async {
     while (mounted) {
       // 파도 애니메이션 실행
       await _waveController.forward();
       _waveController.reset();
-      
+
       await Future.delayed(const Duration(seconds: 6));
     }
   }
-  
+
   @override
   void dispose() {
     _waveController.dispose();
@@ -82,11 +84,11 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                 .map((userQuest) {
                   // quest 객체가 있는지 확인하고 안전하게 파싱
                   final quest = userQuest['quest'];
-                  
+
                   if (quest == null) {
                     return null;
                   }
-                  
+
                   return {
                     'userQuestId': userQuest['userQuestId'],
                     'questId': quest['questId'],
@@ -99,47 +101,48 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                 .where((quest) => quest != null)
                 .cast<Map<String, dynamic>>()
                 .toList();
-            
+
             // 퀘스트 정렬: 출석 -> 인증 -> 나머지
             _dailyQuests.sort((a, b) {
               final titleA = a['title'] as String;
               final titleB = b['title'] as String;
-              
+
               // 출석이 최우선
               if (titleA.contains('출석')) return -1;
               if (titleB.contains('출석')) return 1;
-              
+
               // 그 다음 인증
               if (titleA.contains('인증')) return -1;
               if (titleB.contains('인증')) return 1;
-              
+
               // 나머지는 원래 순서 유지
               return 0;
             });
-            
+
             _isLoadingQuests = false;
           });
         }
       } else {
         if (mounted) {
           setState(() => _isLoadingQuests = false);
-          
+
           // 에러 메시지를 더 구체적으로 표시
-          final errorMsg = response.message?.toString() ?? 
-                          response.error?.toString() ?? 
-                          '퀘스트 정보를 불러오지 못했습니다.';
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('퀘스트 로딩 실패: $errorMsg')),
-          );
+          final errorMsg =
+              response.message?.toString() ??
+              response.error?.toString() ??
+              '퀘스트 정보를 불러오지 못했습니다.';
+
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('퀘스트 로딩 실패: $errorMsg')));
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingQuests = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('퀘스트 로딩 오류: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('퀘스트 로딩 오류: ${e.toString()}')));
       }
     }
   }
@@ -193,10 +196,14 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
 
       if (response.success && response.data != null) {
         if (mounted) {
+          // response.data가 List인지 확인
+          final dataList = response.data is List ? response.data as List : [];
+
           setState(() {
             _mentees = List<Map<String, dynamic>>.from(
-              response.data.map(
+              dataList.map(
                 (mentee) => {
+                  'userId': mentee['userId'] ?? mentee['id'],
                   'username': mentee['username'] ?? '멘티',
                   'streak': mentee['streak'] ?? 0,
                   'level': mentee['level'] ?? 1,
@@ -220,20 +227,30 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     try {
       final response = await ApiService.get('/api/user/mentor');
 
-      if (response.success && response.data != null) {
-        if (mounted) {
+      if (mounted) {
+        if (response.success && response.data != null) {
           setState(() {
             _mentor = {
+              'userId': response.data['userId'] ?? response.data['id'],
               'username': response.data['username'] ?? '멘토',
               'streak': response.data['streak'] ?? 0,
               'level': response.data['level'] ?? 1,
               'exp': response.data['exp'] ?? 0,
             };
           });
+        } else {
+          // 멘토가 없는 경우 null로 설정
+          setState(() {
+            _mentor = null;
+          });
         }
       }
     } catch (e) {
       if (mounted) {
+        // 에러 발생 시 멘토를 null로 설정 (삭제된 경우 등)
+        setState(() {
+          _mentor = null;
+        });
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('멘토 정보 조회 오류: ${e.toString()}')));
@@ -311,7 +328,10 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                       ),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 20.0,
+                    ),
                     child: _isLoading
                         ? const Center(
                             child: SizedBox(
@@ -325,7 +345,11 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                               CircleAvatar(
                                 radius: 40,
                                 backgroundColor: Colors.blue[400],
-                                child: const Icon(Icons.person, size: 45, color: Colors.white),
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 45,
+                                  color: Colors.white,
+                                ),
                               ),
                               const SizedBox(width: 20),
                               Expanded(
@@ -359,7 +383,9 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                                         vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.7),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.7,
+                                        ),
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Row(
@@ -388,7 +414,9 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                               // 오른쪽 레벨 아이콘 (큰 버전)
                               Icon(
                                 _getLevelIcon(_level),
-                                color: _getLevelColor(_level).withValues(alpha: 0.3),
+                                color: _getLevelColor(
+                                  _level,
+                                ).withValues(alpha: 0.3),
                                 size: 50,
                               ),
                             ],
@@ -554,10 +582,10 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               },
             ),
             // 역할별 메뉴 항목
-            if (_role == 'mentee')
+            if (_role == 'mentee') ...[
               ListTile(
                 leading: const Icon(Icons.person_add),
-                title: const Text('멘토 추가', style: TextStyle(fontSize: 16)),
+                title: const Text('멘토 요청 보내기', style: TextStyle(fontSize: 16)),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
@@ -568,10 +596,27 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                   );
                 },
               ),
-            if (_role == 'mentor')
+              ListTile(
+                leading: const Icon(Icons.person_remove),
+                title: const Text('멘토 삭제', style: TextStyle(fontSize: 16)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RemoveMentorPage(),
+                    ),
+                  );
+                },
+              ),
+            ],
+            if (_role == 'mentor') ...[
               ListTile(
                 leading: const Icon(Icons.notifications),
-                title: const Text('멘토 요청 관리', style: TextStyle(fontSize: 16)),
+                title: const Text(
+                  '받은 멘토 요청 관리',
+                  style: TextStyle(fontSize: 16),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
@@ -582,6 +627,20 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                   );
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.people_alt_outlined),
+                title: const Text('멘티 삭제', style: TextStyle(fontSize: 16)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RemoveMenteePage(),
+                    ),
+                  );
+                },
+              ),
+            ],
           ],
         ),
       ),
@@ -591,8 +650,10 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   // 애니메이션이 적용된 글자 위젯
   Widget _buildAnimatedLetter(String letter, int index) {
     // 파도 애니메이션: 위아래로 미세하게 움직임
-    final offset = math.sin((_waveAnimation.value * 2 * math.pi) + (index * math.pi / 5)) * 2;
-    
+    final offset =
+        math.sin((_waveAnimation.value * 2 * math.pi) + (index * math.pi / 5)) *
+        2;
+
     return Transform.translate(
       offset: Offset(0, offset),
       child: ShaderMask(
@@ -614,8 +675,10 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   // CO2의 2를 작게 표시
   Widget _buildAnimatedSubscript(String letter) {
     // 파도 애니메이션
-    final offset = math.sin((_waveAnimation.value * 2 * math.pi) + (1.5 * math.pi / 5)) * 2;
-    
+    final offset =
+        math.sin((_waveAnimation.value * 2 * math.pi) + (1.5 * math.pi / 5)) *
+        2;
+
     return Transform.translate(
       offset: Offset(0, offset + 8),
       child: ShaderMask(
@@ -672,11 +735,15 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   IconData _getQuestIcon(String title) {
     if (title.contains('출석')) {
       return Icons.check_circle; // 출석 체크
-    } else if (title.contains('인증') || title.contains('게시글') || title.contains('확인')) {
+    } else if (title.contains('인증') ||
+        title.contains('게시글') ||
+        title.contains('확인')) {
       return Icons.thumb_up; // 따봉 (인증/검증)
     } else if (title.contains('분리수거')) {
       return Icons.recycling; // 재활용
-    } else if (title.contains('도보') || title.contains('자전거') || title.contains('대중교통')) {
+    } else if (title.contains('도보') ||
+        title.contains('자전거') ||
+        title.contains('대중교통')) {
       return Icons.directions_walk; // 이동
     } else if (title.contains('대기전력') || title.contains('전력')) {
       return Icons.power_off; // 전력
@@ -691,7 +758,11 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     }
   }
 
-  Widget _buildQuestCard(String title, String? points, {bool isCompleted = false}) {
+  Widget _buildQuestCard(
+    String title,
+    String? points, {
+    bool isCompleted = false,
+  }) {
     return Card(
       elevation: 6,
       child: Container(

@@ -138,8 +138,7 @@ class _SettingsPageState extends State<SettingsPage> {
       final response = await ApiService.delete('/api/user/$userId');
 
       if (mounted) {
-        // 204 No Content는 성공으로 처리
-        if (response.success || response.statusCode == 204) {
+        if (response.success) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('회원 탈퇴가 완료되었습니다.')));
