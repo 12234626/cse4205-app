@@ -7,7 +7,6 @@ import 'features/auth/social_login_page.dart';
 import 'features/auth/signup_method_page.dart';
 import 'features/auth/signup_info_page.dart';
 import 'features/lobby/lobby_page.dart';
-import 'features/lobby/lobby_parent_page.dart';
 import 'features/profile/profile_page.dart';
 import 'features/guide/guidelines.dart';
 import 'features/profile/settings_page.dart';
@@ -54,7 +53,6 @@ class MyApp extends StatelessWidget {
         '/signup-method': (context) => const SignupMethodPage(),
         '/signup-info': (context) => const SignupInfoPage(),
         '/lobby': (context) => const LobbyPage(),
-        '/lobby-parent': (context) => const LobbyParentPage(),
         '/profile': (context) => const ProfilePage(),
         '/guidelines': (context) => const GuidelinesPage(),
         '/settings': (context) => const SettingsPage(),

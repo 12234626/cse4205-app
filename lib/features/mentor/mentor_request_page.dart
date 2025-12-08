@@ -14,6 +14,7 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
       TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  String? _successMessage;
 
   @override
   void dispose() {
@@ -25,11 +26,10 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
     final mentorUsername = _mentorUsernameController.text.trim();
 
     if (mentorUsername.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('멘토 닉네임을 입력해주세요.')));
-      }
+      setState(() {
+        _errorMessage = '멘토 닉네임을 입력해주세요.';
+        _successMessage = null;
+      });
       return;
     }
 
@@ -53,18 +53,7 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
 
       // 멘토 정보 추출
       final mentorData = profileResponse.data;
-
-      // userId 필드명 확인 (id 또는 userId)
-      final mentorId = mentorData['userId'] ?? mentorData['id'];
       final mentorRole = mentorData['role'];
-
-      if (mentorId == null) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = '사용자 정보를 가져올 수 없습니다.';
-        });
-        return;
-      }
 
       // 멘토 역할 확인
       if (mentorRole != 'mentor') {
@@ -75,10 +64,10 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
         return;
       }
 
-      // 2단계: 멘토 ID로 요청 전송
+      // 2단계: username으로 요청 전송
       final requestResponse = await ApiService.post(
         '/api/user/mentor-request',
-        body: {'mentorId': mentorId},
+        body: {'otherUsername': mentorUsername},
       );
 
       if (!mounted) return;
@@ -88,24 +77,22 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
       if (requestResponse.success) {
         setState(() {
           _errorMessage = null;
+          _successMessage = '멘토 요청이 성공적으로 전송되었습니다.';
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('멘토 요청이 전송되었습니다.')));
         _mentorUsernameController.clear();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(requestResponse.message ?? '멘토 요청 전송에 실패했습니다.'),
-          ),
-        );
+        setState(() {
+          _successMessage = null;
+          _errorMessage = requestResponse.message ?? '멘토 요청 전송에 실패했습니다.';
+        });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: ${e.toString()}')));
+        setState(() {
+          _isLoading = false;
+          _successMessage = null;
+          _errorMessage = '오류가 발생했습니다: ${e.toString()}';
+        });
       }
     }
   }
@@ -148,9 +135,10 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
                 ),
               ),
               onChanged: (value) {
-                if (_errorMessage != null) {
+                if (_errorMessage != null || _successMessage != null) {
                   setState(() {
                     _errorMessage = null;
+                    _successMessage = null;
                   });
                 }
               },
@@ -161,6 +149,14 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
                 child: Text(
                   _errorMessage!,
                   style: const TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ),
+            if (_successMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  _successMessage!,
+                  style: const TextStyle(color: Colors.green, fontSize: 12),
                 ),
               ),
             const SizedBox(height: 24),
