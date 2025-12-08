@@ -102,7 +102,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                 .cast<Map<String, dynamic>>()
                 .toList();
 
-            // 퀘스트 정렬: 출석 -> 인증 -> 나머지
+            // 퀘스트 정렬: 출석을 맨 앞으로
             _dailyQuests.sort((a, b) {
               final titleA = a['title'] as String;
               final titleB = b['title'] as String;
@@ -110,10 +110,6 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               // 출석이 최우선
               if (titleA.contains('출석')) return -1;
               if (titleB.contains('출석')) return 1;
-
-              // 그 다음 인증
-              if (titleA.contains('인증')) return -1;
-              if (titleB.contains('인증')) return 1;
 
               // 나머지는 원래 순서 유지
               return 0;
