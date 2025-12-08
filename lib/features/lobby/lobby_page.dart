@@ -599,14 +599,18 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               ListTile(
                 leading: const Icon(Icons.person_remove),
                 title: const Text('멘토 삭제', style: TextStyle(fontSize: 16)),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
-                  Navigator.push(
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const RemoveMentorPage(),
                     ),
                   );
+                  // 멘토 삭제 후 돌아왔을 때 멘토 정보 새로고침
+                  if (result == true) {
+                    _loadMentor();
+                  }
                 },
               ),
             ],
@@ -617,27 +621,35 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                   '받은 멘토 요청 관리',
                   style: TextStyle(fontSize: 16),
                 ),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
-                  Navigator.push(
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const MentorRequestManagementPage(),
                     ),
                   );
+                  // 요청 수락 후 돌아왔을 때 멘티 목록 새로고침
+                  if (result == true) {
+                    _loadMentees();
+                  }
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.people_alt_outlined),
                 title: const Text('멘티 삭제', style: TextStyle(fontSize: 16)),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
-                  Navigator.push(
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const RemoveMenteePage(),
                     ),
                   );
+                  // 멘티 삭제 후 돌아왔을 때 멘티 목록 새로고침
+                  if (result == true) {
+                    _loadMentees();
+                  }
                 },
               ),
             ],

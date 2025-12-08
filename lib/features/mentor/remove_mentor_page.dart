@@ -29,9 +29,10 @@ class _RemoveMentorPageState extends State<RemoveMentorPage> {
         if (response.success && response.data != null) {
           setState(() {
             _mentorInfo = {
-              'userId': response.data['userId'] ?? response.data['id'],
+              'userId': response.data['userId'],
               'username': response.data['username'] ?? '알 수 없음',
-              'email': response.data['email'] ?? '',
+              'level': response.data['level'] ?? 1,
+              'exp': response.data['exp'] ?? 0,
             };
             _isLoading = false;
           });
@@ -90,16 +91,44 @@ class _RemoveMentorPageState extends State<RemoveMentorPage> {
     setState(() => _isLoading = true);
 
     try {
+      // 먼저 멘토 정보가 실제로 있는지 확인
+      final checkResponse = await ApiService.get('/api/user/mentor');
+
+      if (!checkResponse.success || checkResponse.data == null) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('삭제할 멘토가 없습니다.')));
+        }
+        return;
+      }
+
+      // 멘토가 있으면 삭제 진행
       final response = await ApiService.delete('/api/user/mentor');
 
       if (mounted) {
         if (response.success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('멘토 관계가 성공적으로 삭제되었습니다.'),
-              backgroundColor: Colors.green,
+          setState(() => _isLoading = false);
+
+          if (!mounted) return;
+          await showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('삭제 완료'),
+              content: const Text('멘토 관계가 성공적으로 삭제되었습니다.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('확인'),
+                ),
+              ],
             ),
           );
+
+          if (!mounted) return;
           Navigator.of(context).pop(true);
         } else {
           setState(() => _isLoading = false);
@@ -107,17 +136,6 @@ class _RemoveMentorPageState extends State<RemoveMentorPage> {
             SnackBar(content: Text(response.message ?? '멘토 삭제에 실패했습니다.')),
           );
         }
-      }
-    } on FormatException {
-      // 204 No Content 응답의 경우 파싱 에러가 발생할 수 있지만 삭제는 성공
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('멘토 관계가 성공적으로 삭제되었습니다.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
@@ -208,15 +226,13 @@ class _RemoveMentorPageState extends State<RemoveMentorPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                if (_mentorInfo!['email'] != null &&
-                                    _mentorInfo!['email'].toString().isNotEmpty)
-                                  Text(
-                                    _mentorInfo!['email'],
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[600],
-                                    ),
+                                Text(
+                                  'Level ${_mentorInfo!['level']} • EXP ${_mentorInfo!['exp']}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
                                   ),
+                                ),
                               ],
                             ),
                           ),
