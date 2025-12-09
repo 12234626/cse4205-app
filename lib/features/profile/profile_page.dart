@@ -374,8 +374,4 @@ class GlowPainter extends CustomPainter {
     }
   }
 
-  @override
-  bool shouldRepaint(covariant GlowPainter oldDelegate) {
-    return oldDelegate.glowIntensity != glowIntensity;
-  }
 }
