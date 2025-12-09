@@ -4,7 +4,6 @@ import 'dart:io';
 import '../../common/constants.dart';
 import '../../models/guideline_post_model.dart';
 import '../../models/comment_model.dart';
-import '../../services/guideline_storage.dart';
 import '../../services/comment_storage.dart';
 import 'guideline_write_page.dart';
 
@@ -170,16 +169,10 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
     );
 
     if (result == true && mounted) {
-      // 수정된 게시글 데이터 로드
-      final posts = await GuidelineStorage.getPosts();
-      final updatedPost = posts.firstWhere(
-        (p) => p.id == currentPost.id,
-        orElse: () => currentPost,
-      );
-      setState(() {
-        currentPost = updatedPost;
-        _isModified = true;
-      });
+      // TODO: API 연동 필요
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('수정 기능은 준비 중입니다.')));
     }
   }
 
@@ -205,14 +198,11 @@ class _GuidelineDetailPageState extends State<GuidelineDetailPage> {
     );
 
     if (result == true) {
-      final posts = await GuidelineStorage.getPosts();
-      posts.removeWhere((p) => p.id == currentPost.id);
-      await GuidelineStorage.savePosts(posts);
-      await CommentStorage.deleteCommentsByPostId(currentPost.id);
-
+      // TODO: API 연동 필요
       if (mounted) {
-        _isModified = true;
-        Navigator.pop(context, true);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('삭제 기능은 준비 중입니다.')));
       }
     }
   }
