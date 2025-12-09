@@ -19,7 +19,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
 
   // 폼 데이터
   DateTime? _birthDate;
-  String _selectedRole = 'mentee'; // 기본값: mentee (학생)
+  String _selectedRole = 'MENTEE'; // 기본값: MENTEE (학생)
 
   // 닉네임 관련
   final TextEditingController _nicknameController = TextEditingController();
@@ -179,7 +179,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
       }
 
       // 멘토 역할 확인
-      if (userRole != 'mentor') {
+      if (userRole != 'MENTOR') {
         setState(() {
           _mentorNicknameErrorMessage = '해당 사용자는 멘토가 아닙니다.';
           _isMentorNicknameValid = false;
@@ -194,7 +194,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
         _mentorNicknameErrorMessage = null;
         _isMentorNicknameValid = true;
         _mentorNickname = mentorNickname;
-        _selectedRole = 'mentee'; // 멘토를 입력한 경우 자동으로 mentee로 설정
+        _selectedRole = 'MENTEE'; // 멘토를 입력한 경우 자동으로 MENTEE로 설정
         _isLoading = false;
       });
 
@@ -676,18 +676,18 @@ class _SignupStepPageState extends State<SignupStepPage> {
           InkWell(
             onTap: _mentorNickname != null
                 ? null
-                : () => setState(() => _selectedRole = 'mentee'),
+                : () => setState(() => _selectedRole = 'MENTEE'),
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: _selectedRole == 'mentee'
+                  color: _selectedRole == 'MENTEE'
                       ? AppColors.primary
                       : Colors.grey[300]!,
                   width: 2,
                 ),
                 borderRadius: BorderRadius.circular(8),
-                color: _selectedRole == 'mentee'
+                color: _selectedRole == 'MENTEE'
                     ? AppColors.primary.withValues(alpha: 0.1)
                     : Colors.white,
               ),
@@ -696,7 +696,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                   Icon(
                     Icons.school,
                     size: 40,
-                    color: _selectedRole == 'mentee'
+                    color: _selectedRole == 'MENTEE'
                         ? AppColors.primary
                         : Colors.grey[600],
                   ),
@@ -710,7 +710,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: _selectedRole == 'mentee'
+                            color: _selectedRole == 'MENTEE'
                                 ? AppColors.primary
                                 : Colors.black,
                           ),
@@ -726,7 +726,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                       ],
                     ),
                   ),
-                  if (_selectedRole == 'mentee')
+                  if (_selectedRole == 'MENTEE')
                     Icon(Icons.check_circle, color: AppColors.primary),
                 ],
               ),
@@ -740,18 +740,18 @@ class _SignupStepPageState extends State<SignupStepPage> {
             child: InkWell(
               onTap: _mentorNickname != null
                   ? null
-                  : () => setState(() => _selectedRole = 'mentor'),
+                  : () => setState(() => _selectedRole = 'MENTOR'),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _selectedRole == 'mentor'
+                    color: _selectedRole == 'MENTOR'
                         ? AppColors.primary
                         : Colors.grey[300]!,
                     width: 2,
                   ),
                   borderRadius: BorderRadius.circular(8),
-                  color: _selectedRole == 'mentor'
+                  color: _selectedRole == 'MENTOR'
                       ? AppColors.primary.withValues(alpha: 0.1)
                       : Colors.white,
                 ),
@@ -760,7 +760,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                     Icon(
                       Icons.family_restroom,
                       size: 40,
-                      color: _selectedRole == 'mentor'
+                      color: _selectedRole == 'MENTOR'
                           ? AppColors.primary
                           : Colors.grey[600],
                     ),
@@ -774,7 +774,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: _selectedRole == 'mentor'
+                              color: _selectedRole == 'MENTOR'
                                   ? AppColors.primary
                                   : Colors.black,
                             ),
@@ -790,7 +790,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                         ],
                       ),
                     ),
-                    if (_selectedRole == 'mentor')
+                    if (_selectedRole == 'MENTOR')
                       Icon(Icons.check_circle, color: AppColors.primary),
                   ],
                 ),

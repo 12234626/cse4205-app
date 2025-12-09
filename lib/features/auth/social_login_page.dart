@@ -94,7 +94,7 @@ class _SocialLoginPageState extends State<SocialLoginPage> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton.icon(
-                        onPressed: () => _handleLogin('google', 'Google'),
+                        onPressed: () => _handleLogin('GOOGLE', 'Google'),
                         icon: const Icon(Icons.g_mobiledata, size: 28),
                         label: const Text(
                           'Google로 로그인',
@@ -119,7 +119,7 @@ class _SocialLoginPageState extends State<SocialLoginPage> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton.icon(
-                        onPressed: () => _handleLogin('naver', 'Naver'),
+                        onPressed: () => _handleLogin('NAVER', 'Naver'),
                         icon: const Text(
                           'N',
                           style: TextStyle(
@@ -151,7 +151,7 @@ class _SocialLoginPageState extends State<SocialLoginPage> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton.icon(
-                        onPressed: () => _handleLogin('kakao', 'Kakao'),
+                        onPressed: () => _handleLogin('KAKAO', 'Kakao'),
                         icon: const Icon(Icons.chat_bubble, size: 24),
                         label: const Text(
                           'Kakao로 로그인',

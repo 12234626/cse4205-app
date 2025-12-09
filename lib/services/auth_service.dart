@@ -28,7 +28,7 @@ class AuthService {
     String? token;
 
     switch (provider) {
-      case 'google':
+      case 'GOOGLE':
         await GoogleSignIn.instance.initialize();
 
         final GoogleSignInAccount account = await GoogleSignIn.instance
@@ -41,7 +41,7 @@ class AuthService {
 
         break;
 
-      case 'naver':
+      case 'NAVER':
         await FlutterNaverLogin.logIn();
 
         final naverToken = await FlutterNaverLogin.getCurrentAccessToken();
@@ -52,7 +52,7 @@ class AuthService {
 
         break;
 
-      case 'kakao':
+      case 'KAKAO':
         final oauthToken = await isKakaoTalkInstalled()
             ? await UserApi.instance.loginWithKakaoTalk()
             : await UserApi.instance.loginWithKakaoAccount();
