@@ -113,29 +113,15 @@ class _SettingsPageState extends State<SettingsPage> {
     if (confirmed != true) return;
 
     try {
-      // 현재 사용자 정보 가져오기
-      final profileResponse = await ApiService.get('/api/user/profile');
+      // 회원 탈퇴 API 호출
+      final response = await ApiService.delete('/api/user');
 
-      if (!profileResponse.success || profileResponse.data == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('사용자 정보를 가져올 수 없습니다.')));
-        }
-        return;
-      }
-
-      final userId = profileResponse.data['userId'];
-
-      // 소셜 로그인 로그아웃 처리 (오류 무시)
+      // 탈퇴 후 로그아웃 처리 (오류 무시)
       try {
         await AuthService.logoutAll();
       } catch (e) {
-        // 오류 발생해도 계속 진행
+        // 오류 발생해도 무시
       }
-
-      // 회원 탈퇴 API 호출
-      final response = await ApiService.delete('/api/user/$userId');
 
       if (mounted) {
         if (response.success) {
@@ -145,15 +131,37 @@ class _SettingsPageState extends State<SettingsPage> {
           Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response.message ?? '회원 탈퇴에 실패했습니다.')),
+            SnackBar(
+              content: Text(
+                '회원 탈퇴 실패: ${response.message}\n상태 코드: ${response.statusCode}',
+              ),
+              duration: const Duration(seconds: 5),
+            ),
           );
         }
       }
-    } catch (e) {
+    } on FormatException {
+      // 204 No Content로 body가 비어있어 JSON 파싱 실패한 경우 = 성공
+      try {
+        await AuthService.logoutAll();
+      } catch (e) {
+        // 오류 발생해도 무시
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: ${e.toString()}')));
+        ).showSnackBar(const SnackBar(content: Text('회원 탈퇴가 완료되었습니다.')));
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('오류 발생:\n${e.toString()}'),
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
     }
   }
