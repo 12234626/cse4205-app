@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
+import 'dart:async';
 import '../../common/constants.dart';
-import '../guide/guideline_detail_page.dart';
-import '../../models/guideline_post_model.dart';
 import '../survey/carbon_survey_page.dart';
 import '../guide/guidelines.dart';
 import '../community/community_page.dart';
+import '../community/community_write_page.dart';
 import '../../services/api_service.dart';
 import '../mentor/mentor_request_page.dart';
 import '../mentor/mentor_request_management_page.dart';
@@ -31,6 +31,8 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   bool _isLoading = true;
   List<Map<String, dynamic>> _dailyQuests = [];
   bool _isLoadingQuests = false;
+  Set<int> _questsReadyForAuth = {}; // 인증 버튼 상태로 변경된 퀘스트 ID들
+  Map<int, Timer?> _authButtonTimers = {}; // 각 퀘스트별 타이머
 
   late AnimationController _waveController;
   late Animation<double> _waveAnimation;
@@ -68,6 +70,11 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   @override
   void dispose() {
     _waveController.dispose();
+    // 모든 타이머 취소
+    for (var timer in _authButtonTimers.values) {
+      timer?.cancel();
+    }
+    _authButtonTimers.clear();
     super.dispose();
   }
 
@@ -471,37 +478,16 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                     child: _buildQuestCard(
                       quest['title'],
                       '+${quest['expReward']}',
+                      userQuestId: quest['userQuestId'],
                       isCompleted: quest['status'] == 'COMPLETED',
+                      isReadyForAuth: _questsReadyForAuth.contains(quest['userQuestId']),
                     ),
                   );
                 }),
               const SizedBox(height: 24),
 
               // 하단 메뉴
-              const Text(
-                '일일퀘스트 가이드라인',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _buildMenuButton(context, '분리수거', Icons.assignment, () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => GuidelineDetailPage(
-                      post: GuidelinePost(
-                        id: '1',
-                        category: '일일퀘스트',
-                        title: '분리수거 가이드라인',
-                        content: '테스트 내용입니다.',
-                        date: '2025-11-21',
-                        imageUrl:
-                            'https://plus.unsplash.com/premium_photo-1681987448179-4a93b7975018?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-                      ),
-                    ),
-                  ),
-                );
-              }),
-              const SizedBox(height: 8),
+
               _buildMenuButton(context, '개인설정', Icons.person_outline, () {}),
               const SizedBox(height: 8),
               _buildMenuButton(context, '특강 안내', Icons.school, () {}),
@@ -548,6 +534,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                 ],
               ),
             ),
+
             ListTile(
               leading: const Icon(Icons.book),
               title: const Text(
@@ -566,7 +553,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
             ),
             ListTile(
               leading: const Icon(Icons.forum),
-              title: const Text('커뮤니티 게시판', style: TextStyle(fontSize: 16)),
+              title: const Text('인증 게시판', style: TextStyle(fontSize: 16)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -769,7 +756,9 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   Widget _buildQuestCard(
     String title,
     String? points, {
+    required int userQuestId,
     bool isCompleted = false,
+    bool isReadyForAuth = false,
   }) {
     return Card(
       elevation: 6,
@@ -815,29 +804,87 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                           ),
                         ),
                       )
-                    : ElevatedButton(
-                        onPressed: () {
-                          // 퀘스트 완료 처리 (추후 구현)
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('퀘스트 완료 기능은 추후 구현 예정입니다.'),
+                    : AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        transitionBuilder: (Widget child, Animation<double> animation) {
+                          return ScaleTransition(
+                            scale: animation,
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
                             ),
                           );
                         },
-                        style: ElevatedButton.styleFrom(
-                          elevation: 6,
-                          shadowColor: Color.fromRGBO(0, 0, 0, 0.4),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
+                        child: ElevatedButton(
+                          key: ValueKey<bool>(isReadyForAuth),
+                          onPressed: () async {
+                            if (isReadyForAuth) {
+                              // 기존 타이머 취소
+                              _authButtonTimers[userQuestId]?.cancel();
+                              _authButtonTimers.remove(userQuestId);
+                              
+                              // 인증 버튼 클릭 시 글 작성 페이지로 이동
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CommunityWritePage(
+                                    userQuestId: userQuestId,
+                                  ),
+                                ),
+                              );
+                              
+                              // 게시글 작성 완료 또는 취소 시 인증 버튼 상태 초기화
+                              if (mounted) {
+                                setState(() {
+                                  _questsReadyForAuth.remove(userQuestId);
+                                });
+                                // 게시글 작성 완료 시 퀘스트 목록 새로고침
+                                if (result == true) {
+                                  _loadDailyQuests();
+                                }
+                              }
+                            } else {
+                              // 점수 버튼 클릭 시 인증 버튼으로 변경
+                              setState(() {
+                                _questsReadyForAuth.add(userQuestId);
+                              });
+                              
+                              // 6초 후 자동으로 점수 버튼으로 복귀
+                              _authButtonTimers[userQuestId]?.cancel();
+                              _authButtonTimers[userQuestId] = Timer(
+                                const Duration(seconds: 6),
+                                () {
+                                  if (mounted) {
+                                    setState(() {
+                                      _questsReadyForAuth.remove(userQuestId);
+                                    });
+                                  }
+                                  _authButtonTimers.remove(userQuestId);
+                                },
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            elevation: 6,
+                            shadowColor: const Color.fromRGBO(0, 0, 0, 0.4),
+                            backgroundColor: isReadyForAuth 
+                                ? Colors.green[50] 
+                                : null,
+                            foregroundColor: isReadyForAuth 
+                                ? Colors.orange[700] 
+                                : null,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                          child: Text(
+                            isReadyForAuth ? '인증' : points,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                        ),
-                        child: Text(
-                          points,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
             ],

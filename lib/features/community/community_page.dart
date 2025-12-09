@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../common/constants.dart';
 import '../../models/community_post_model.dart';
+import '../../services/api_service.dart';
 import 'community_detail_page.dart';
-import 'community_write_page.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -24,48 +24,86 @@ class _CommunityPageState extends State<CommunityPage> {
   Future<void> _loadPosts() async {
     setState(() => _isLoading = true);
 
-    // TODO: 실제 API 호출
-    await Future.delayed(const Duration(milliseconds: 500));
+    print('[DEBUG] 게시글 목록 로드 시작');
 
-    // 임시 데이터
-    setState(() {
-      _posts = [
-        CommunityPost(
-          id: '1',
-          authorId: 'user1',
-          authorNickname: '환경지킴이',
-          title: '오늘 분리수거 꿀팁 공유합니다!',
-          content: '플라스틱 분리배출할 때 꼭 이것만은 확인하세요...',
-          date: '2025-11-28',
-          views: 142,
-          likes: 23,
-          comments: 8,
-        ),
-        CommunityPost(
-          id: '2',
-          authorId: 'user2',
-          authorNickname: '초록별',
-          title: '텀블러 사용 2주차 후기',
-          content: '일회용컵 대신 텀블러를 사용한지 2주가 지났습니다.',
-          date: '2025-11-27',
-          views: 89,
-          likes: 15,
-          comments: 5,
-        ),
-        CommunityPost(
-          id: '3',
-          authorId: 'user3',
-          authorNickname: '에코라이프',
-          title: '대중교통 이용 챌린지 성공!',
-          content: '한 달간 출퇴근 대중교통으로만 다녀왔어요.',
-          date: '2025-11-26',
-          views: 234,
-          likes: 45,
-          comments: 12,
-        ),
-      ];
-      _isLoading = false;
-    });
+    try {
+      final response = await ApiService.get('/api/consent-request/community');
+
+      print('[DEBUG] API 응답 - success: ${response.success}');
+      print('[DEBUG] API 응답 - statusCode: ${response.statusCode}');
+      print('[DEBUG] API 응답 - data type: ${response.data?.runtimeType}');
+      print('[DEBUG] API 응답 - data: ${response.data}');
+
+      if (response.success && response.data != null) {
+        if (mounted) {
+          setState(() {
+            _posts = (response.data as List)
+                .map((post) {
+                  try {
+                    print('[DEBUG] 게시글 파싱 중: ${post['consentRequestId']}');
+                    
+                    // createdAt 날짜 파싱
+                    String dateStr;
+                    try {
+                      final createdAt = post['createdAt'];
+                      if (createdAt != null && createdAt is String && createdAt.length >= 10) {
+                        dateStr = createdAt.substring(0, 10);
+                      } else {
+                        dateStr = DateTime.now().toString().substring(0, 10);
+                      }
+                    } catch (e) {
+                      print('[DEBUG] 날짜 파싱 실패, 기본값 사용: $e');
+                      dateStr = DateTime.now().toString().substring(0, 10);
+                    }
+                    
+                    return CommunityPost(
+                      id: post['consentRequestId'].toString(),
+                      authorId: post['author']['userId'].toString(),
+                      authorNickname: post['author']['username'] ?? '사용자',
+                      title: post['title'] ?? '제목 없음',
+                      content: post['content'] ?? '',
+                      date: dateStr,
+                      views: 0, // API에 views 없음
+                      likes: post['reviews']?.length ?? 0, // 리뷰 수를 likes로 사용
+                      comments: 0, // 댓글 기능 제거됨
+                    );
+                  } catch (e) {
+                    print('[DEBUG] 게시글 파싱 실패: $e');
+                    return null;
+                  }
+                })
+                .where((post) => post != null)
+                .cast<CommunityPost>()
+                .toList();
+            print('[DEBUG] 파싱된 게시글 수: ${_posts.length}');
+            _isLoading = false;
+          });
+        }
+      } else {
+        print('[DEBUG] API 호출 실패 또는 데이터 없음');
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(
+            SnackBar(
+              content: Text(
+                response.message?.toString() ??
+                    '게시글을 불러오지 못했습니다.',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('[DEBUG] 예외 발생: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: ${e.toString()}')));
+      }
+    }
   }
 
   // 마크다운 문법 제거 및 첫 번째 문장 추출
@@ -113,7 +151,7 @@ class _CommunityPageState extends State<CommunityPage> {
         flexibleSpace: Container(
           decoration: const BoxDecoration(gradient: AppColors.appBarGradient),
         ),
-        title: const Text('커뮤니티'),
+        title: const Text('인증 게시판'),
       ),
       body: SafeArea(
         child: _isLoading
@@ -141,16 +179,15 @@ class _CommunityPageState extends State<CommunityPage> {
               ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CommunityWritePage()),
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('로비 페이지에서 퀘스트 카드의 인증 버튼을 눌러 게시글을 작성하세요.'),
+            ),
           );
-          if (result == true) {
-            _loadPosts();
-          }
         },
         backgroundColor: AppColors.primary,
+        tooltip: '글쓰기',
         child: const Icon(Icons.edit),
       ),
     );

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../common/constants.dart';
 import '../../models/guideline_post_model.dart';
-import '../../services/guideline_storage.dart';
 import 'guideline_write_page.dart';
 import 'guideline_detail_page.dart';
 import 'dart:io';
@@ -25,9 +24,9 @@ class _GuidelinesPageState extends State<GuidelinesPage> {
 
   Future<void> _loadPosts() async {
     setState(() => _isLoading = true);
-    final posts = await GuidelineStorage.getPosts();
+    // TODO: API 연동 필요
     setState(() {
-      _posts = posts;
+      _posts = [];
       _isLoading = false;
     });
   }
