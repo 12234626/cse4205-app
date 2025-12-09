@@ -159,7 +159,8 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
           setState(() {
             _username = response.data['username'] ?? '사용자';
             _streak = response.data['streak'] ?? 0;
-            _level = response.data['level'] ?? 1;
+            final exp = (response.data['exp'] ?? 0) as int;
+            _level = exp ~/ 100;
             _role = response.data['role'] ?? 'MENTEE';
             _isLoading = false;
           });
@@ -204,15 +205,16 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
 
           setState(() {
             _mentees = List<Map<String, dynamic>>.from(
-              dataList.map(
-                (mentee) => {
+              dataList.map((mentee) {
+                final exp = (mentee['exp'] ?? 0) as int;
+                return {
                   'userId': mentee['userId'] ?? mentee['id'],
                   'username': mentee['username'] ?? '멘티',
                   'streak': mentee['streak'] ?? 0,
-                  'level': mentee['level'] ?? 1,
-                  'exp': mentee['exp'] ?? 0,
-                },
-              ),
+                  'level': exp ~/ 100,
+                  'exp': exp,
+                };
+              }),
             );
           });
         }
@@ -232,13 +234,14 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
 
       if (mounted) {
         if (response.success && response.data != null) {
+          final exp = (response.data['exp'] ?? 0) as int;
           setState(() {
             _mentor = {
               'userId': response.data['userId'] ?? response.data['id'],
               'username': response.data['username'] ?? '멘토',
               'streak': response.data['streak'] ?? 0,
-              'level': response.data['level'] ?? 1,
-              'exp': response.data['exp'] ?? 0,
+              'level': exp ~/ 100,
+              'exp': exp,
             };
           });
         } else {
@@ -345,13 +348,22 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                           )
                         : Row(
                             children: [
-                              CircleAvatar(
-                                radius: 40,
-                                backgroundColor: Colors.blue[400],
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 45,
-                                  color: Colors.white,
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: _getTierInfo(_level)['color'],
+                                    width: 4,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Colors.blue[400],
+                                  child: const Icon(
+                                    Icons.person,
+                                    size: 45,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 20),
@@ -480,14 +492,15 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                       '+${quest['expReward']}',
                       userQuestId: quest['userQuestId'],
                       isCompleted: quest['status'] == 'COMPLETED',
-                      isReadyForAuth: _questsReadyForAuth.contains(quest['userQuestId']),
+                      isReadyForAuth: _questsReadyForAuth.contains(
+                        quest['userQuestId'],
+                      ),
                     ),
                   );
                 }),
               const SizedBox(height: 24),
 
               // 하단 메뉴
-
               _buildMenuButton(context, '개인설정', Icons.person_outline, () {}),
               const SizedBox(height: 8),
               _buildMenuButton(context, '특강 안내', Icons.school, () {}),
@@ -692,6 +705,22 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     );
   }
 
+  Map<String, dynamic> _getTierInfo(int level) {
+    if (level <= 50) {
+      return {'name': '없음', 'color': Colors.grey};
+    } else if (level <= 100) {
+      return {'name': '브론즈', 'color': const Color(0xFFCD7F32)};
+    } else if (level <= 150) {
+      return {'name': '실버', 'color': const Color(0xFFC0C0C0)};
+    } else if (level <= 200) {
+      return {'name': '골드', 'color': const Color(0xFFFFD700)};
+    } else if (level <= 250) {
+      return {'name': '플래티넘', 'color': const Color(0xFF47F5BB)};
+    } else {
+      return {'name': '다이아', 'color': const Color(0xFFB9F2FF)};
+    }
+  }
+
   // 레벨에 따른 아이콘 반환
   IconData _getLevelIcon(int level) {
     if (level >= 25) {
@@ -806,15 +835,16 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                       )
                     : AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
-                        transitionBuilder: (Widget child, Animation<double> animation) {
-                          return ScaleTransition(
-                            scale: animation,
-                            child: FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            ),
-                          );
-                        },
+                        transitionBuilder:
+                            (Widget child, Animation<double> animation) {
+                              return ScaleTransition(
+                                scale: animation,
+                                child: FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
+                              );
+                            },
                         child: ElevatedButton(
                           key: ValueKey<bool>(isReadyForAuth),
                           onPressed: () async {
@@ -822,7 +852,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                               // 기존 타이머 취소
                               _authButtonTimers[userQuestId]?.cancel();
                               _authButtonTimers.remove(userQuestId);
-                              
+
                               // 인증 버튼 클릭 시 글 작성 페이지로 이동
                               final result = await Navigator.push(
                                 context,
@@ -832,7 +862,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                                   ),
                                 ),
                               );
-                              
+
                               // 게시글 작성 완료 또는 취소 시 인증 버튼 상태 초기화
                               if (mounted) {
                                 setState(() {
@@ -848,7 +878,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                               setState(() {
                                 _questsReadyForAuth.add(userQuestId);
                               });
-                              
+
                               // 6초 후 자동으로 점수 버튼으로 복귀
                               _authButtonTimers[userQuestId]?.cancel();
                               _authButtonTimers[userQuestId] = Timer(
@@ -867,11 +897,11 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                           style: ElevatedButton.styleFrom(
                             elevation: 6,
                             shadowColor: const Color.fromRGBO(0, 0, 0, 0.4),
-                            backgroundColor: isReadyForAuth 
-                                ? Colors.green[50] 
+                            backgroundColor: isReadyForAuth
+                                ? Colors.green[50]
                                 : null,
-                            foregroundColor: isReadyForAuth 
-                                ? Colors.orange[700] 
+                            foregroundColor: isReadyForAuth
+                                ? Colors.orange[700]
                                 : null,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -1022,12 +1052,21 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                         color: Colors.orange,
                       ),
                       const SizedBox(width: 4),
-                      Text('$streak일'),
-                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 50,
+                        child: Text('$streak일', overflow: TextOverflow.visible),
+                      ),
+                      const SizedBox(width: 8),
                       const Icon(Icons.star, size: 16, color: Colors.amber),
                       const SizedBox(width: 4),
-                      Text('Lv.$level'),
-                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 55,
+                        child: Text(
+                          'Lv.$level',
+                          overflow: TextOverflow.visible,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       const Icon(
                         Icons.trending_up,
                         size: 16,
@@ -1131,12 +1170,21 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                         color: Colors.orange,
                       ),
                       const SizedBox(width: 4),
-                      Text('$streak일'),
-                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 50,
+                        child: Text('$streak일', overflow: TextOverflow.visible),
+                      ),
+                      const SizedBox(width: 8),
                       const Icon(Icons.star, size: 16, color: Colors.amber),
                       const SizedBox(width: 4),
-                      Text('Lv.$level'),
-                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 55,
+                        child: Text(
+                          'Lv.$level',
+                          overflow: TextOverflow.visible,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       const Icon(
                         Icons.trending_up,
                         size: 16,

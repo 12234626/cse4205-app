@@ -101,7 +101,7 @@ class _ProfilePageState extends State<ProfilePage>
     } else if (level <= 200) {
       return {'name': '골드', 'color': const Color(0xFFFFD700)};
     } else if (level <= 250) {
-      return {'name': '플래티넘', 'color': const Color(0xFFE5E4E2)};
+      return {'name': '플래티넘', 'color': const Color(0xFF47F5BB)};
     } else {
       return {'name': '다이아', 'color': const Color(0xFFB9F2FF)};
     }
@@ -194,25 +194,25 @@ class _ProfilePageState extends State<ProfilePage>
                 // 프로필 사진 (배경과 겹치게 배치)
                 Positioned(
                   bottom: -50,
-                  child: CustomPaint(
-                    painter: GlowPainter(
-                      glowIntensity: _getGlowIntensity(_streak),
-                      animation: _animation,
+                  // child: CustomPaint(
+                  //   painter: GlowPainter(
+                  //     glowIntensity: _getGlowIntensity(_streak),
+                  //     animation: _animation,
+                  //   ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _getTierInfo(_level)['color'],
+                        width: 6,
+                      ),
                     ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _getTierInfo(_level)['color'],
-                          width: 6,
-                        ),
-                      ),
-                      child: const CircleAvatar(
-                        radius: 50,
-                        child: Icon(Icons.person, size: 60),
-                      ),
+                    child: const CircleAvatar(
+                      radius: 50,
+                      child: Icon(Icons.person, size: 60),
                     ),
                   ),
+                  // ),
                 ),
               ],
             ),
@@ -240,9 +240,15 @@ class _ProfilePageState extends State<ProfilePage>
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildStatItem(Icons.access_time, '$_streak일 연속 해결!'),
-                      _buildStatItem(
-                        Icons.emoji_events,
-                        '레벨 $_level • 레벨업까지 $_nextLevelExp EXP',
+                      Column(
+                        children: [
+                          _buildStatItem(Icons.emoji_events, '레벨 $_level'),
+                          const SizedBox(height: 4),
+                          _buildStatItem(
+                            Icons.trending_up,
+                            '레벨업까지 $_nextLevelExp EXP',
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -374,4 +380,8 @@ class GlowPainter extends CustomPainter {
     }
   }
 
+  @override
+  bool shouldRepaint(covariant GlowPainter oldDelegate) {
+    return oldDelegate.glowIntensity != glowIntensity;
+  }
 }
