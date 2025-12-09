@@ -25,7 +25,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   String _username = '사용자';
   int _streak = 0;
   int _level = 1;
-  String _role = 'mentee';
+  String _role = 'MENTEE';
   List<Map<String, dynamic>> _mentees = [];
   Map<String, dynamic>? _mentor;
   bool _isLoading = true;
@@ -153,14 +153,14 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
             _username = response.data['username'] ?? '사용자';
             _streak = response.data['streak'] ?? 0;
             _level = response.data['level'] ?? 1;
-            _role = response.data['role'] ?? 'mentee';
+            _role = response.data['role'] ?? 'MENTEE';
             _isLoading = false;
           });
 
           // 멘토인 경우 별도로 멘티 목록 조회
-          if (_role == 'mentor') {
+          if (_role == 'MENTOR') {
             _loadMentees();
-          } else if (_role == 'mentee') {
+          } else if (_role == 'MENTEE') {
             _loadMentor();
           }
         }
@@ -423,10 +423,10 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               const SizedBox(height: 24),
 
               // 멘토인 경우 멘티 목록 표시
-              if (_role == 'mentor') ..._buildMenteeSection(),
+              if (_role == 'MENTOR') ..._buildMenteeSection(),
 
               // 멘티인 경우 멘토 정보 표시
-              if (_role == 'mentee') ..._buildMentorSection(),
+              if (_role == 'MENTEE') ..._buildMentorSection(),
 
               // 일일 퀘스트 섹션
               Row(
@@ -471,7 +471,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                     child: _buildQuestCard(
                       quest['title'],
                       '+${quest['expReward']}',
-                      isCompleted: quest['status'] == 'completed',
+                      isCompleted: quest['status'] == 'COMPLETED',
                     ),
                   );
                 }),
@@ -578,7 +578,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               },
             ),
             // 역할별 메뉴 항목
-            if (_role == 'mentee') ...[
+            if (_role == 'MENTEE') ...[
               ListTile(
                 leading: const Icon(Icons.person_add),
                 title: const Text('멘토 요청 보내기', style: TextStyle(fontSize: 16)),
@@ -610,7 +610,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                 },
               ),
             ],
-            if (_role == 'mentor') ...[
+            if (_role == 'MENTOR') ...[
               ListTile(
                 leading: const Icon(Icons.notifications),
                 title: const Text(

@@ -35,19 +35,15 @@ class _MentorRequestManagementPageState
             _requests = List<Map<String, dynamic>>.from(
               dataList
                   .where((req) {
-                    // pending 상태인 요청만 필터링
-                    final status = (req['status'] ?? 'pending')
-                        .toString()
-                        .toLowerCase();
-                    return status == 'pending';
+                    // PENDING 상태인 요청만 필터링
+                    final status = req['status']?.toString() ?? 'PENDING';
+                    return status == 'PENDING';
                   })
                   .map(
                     (req) => {
                       'id': req['mentorRequestId'],
                       'menteeUsername': req['mentee']?['username'] ?? '알 수 없음',
-                      'status': (req['status'] ?? 'pending')
-                          .toString()
-                          .toLowerCase(),
+                      'status': req['status']?.toString() ?? 'PENDING',
                       'createdAt': req['createdAt'] ?? '',
                     },
                   ),
@@ -89,7 +85,7 @@ class _MentorRequestManagementPageState
           setState(() {
             final index = _requests.indexWhere((req) => req['id'] == requestId);
             if (index != -1) {
-              _requests[index]['status'] = accept ? 'accepted' : 'rejected';
+              _requests[index]['status'] = accept ? 'ACCEPTED' : 'REJECTED';
             }
             _isLoading = false;
           });

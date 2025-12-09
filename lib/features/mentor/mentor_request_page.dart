@@ -13,13 +13,42 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
   final TextEditingController _mentorUsernameController =
       TextEditingController();
   bool _isLoading = false;
+  bool _hasMentor = false; // 멘토 존재 여부
   String? _errorMessage;
   String? _successMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingMentor();
+  }
 
   @override
   void dispose() {
     _mentorUsernameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkExistingMentor() async {
+    try {
+      final response = await ApiService.get('/api/user/mentor');
+
+      if (mounted) {
+        setState(() {
+          _hasMentor = response.success && response.data != null;
+          if (_hasMentor) {
+            _errorMessage = '이미 멘토가 존재합니다.';
+          }
+        });
+      }
+    } catch (e) {
+      // 멘토가 없는 경우 404 에러가 발생할 수 있음 - 정상
+      if (mounted) {
+        setState(() {
+          _hasMentor = false;
+        });
+      }
+    }
   }
 
   Future<void> _sendMentorRequest() async {
@@ -56,7 +85,7 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
       final mentorRole = mentorData['role'];
 
       // 멘토 역할 확인
-      if (mentorRole != 'mentor') {
+      if (mentorRole != 'MENTOR') {
         setState(() {
           _isLoading = false;
           _errorMessage = '해당 사용자는 멘토가 아닙니다.';
@@ -134,8 +163,10 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
                   borderSide: BorderSide(color: AppColors.primary, width: 2),
                 ),
               ),
+              enabled: !_hasMentor,
               onChanged: (value) {
-                if (_errorMessage != null || _successMessage != null) {
+                if (!_hasMentor &&
+                    (_errorMessage != null || _successMessage != null)) {
                   setState(() {
                     _errorMessage = null;
                     _successMessage = null;
@@ -163,9 +194,11 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isLoading ? null : _sendMentorRequest,
+                onPressed: (_isLoading || _hasMentor)
+                    ? null
+                    : _sendMentorRequest,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: _hasMentor ? Colors.grey : AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
