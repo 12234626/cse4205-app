@@ -112,11 +112,11 @@ class _MentorRequestManagementPageState
 
   String _getStatusText(String status) {
     switch (status) {
-      case 'pending':
+      case 'PENDING':
         return '대기중';
-      case 'accepted':
+      case 'ACCEPTED':
         return '수락됨';
-      case 'rejected':
+      case 'REJECTED':
         return '거절됨';
       default:
         return status;
@@ -125,11 +125,11 @@ class _MentorRequestManagementPageState
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'pending':
+      case 'PENDING':
         return Colors.orange;
-      case 'accepted':
+      case 'ACCEPTED':
         return Colors.green;
-      case 'rejected':
+      case 'REJECTED':
         return Colors.red;
       default:
         return Colors.grey;
@@ -172,9 +172,8 @@ class _MentorRequestManagementPageState
                 itemCount: _requests.length,
                 itemBuilder: (context, index) {
                   final request = _requests[index];
-                  final status =
-                      request['status']?.toString().toLowerCase() ?? '';
-                  final isPending = status == 'pending';
+                  final status = request['status']?.toString() ?? 'PENDING';
+                  final isPending = status == 'PENDING';
                   // TODO : 수락/거절 에러 처리 수정하기
                   return Card(
                     elevation: 4,

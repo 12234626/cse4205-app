@@ -19,6 +19,9 @@ class _ProfilePageState extends State<ProfilePage>
   // 사용자 정보
   String _username = '사용자';
   int _streak = 0;
+  int _level = 0;
+  int _currentLevelExp = 0;
+  int _nextLevelExp = 1;
   bool _isLoading = true;
 
   // 임시 데이터 (추후 데이터베이스에서 가져올 예정)
@@ -31,8 +34,11 @@ class _ProfilePageState extends State<ProfilePage>
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
-    )..repeat();
-    _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
+    )..repeat(reverse: true);
+    _animation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(_animationController);
     _loadUserProfile();
   }
 
@@ -50,6 +56,10 @@ class _ProfilePageState extends State<ProfilePage>
           setState(() {
             _username = response.data['username'] ?? '사용자';
             _streak = response.data['streak'] ?? 0;
+            final exp = (response.data['exp'] ?? 0) as int;
+            _level = exp ~/ 100;
+            _currentLevelExp = exp % 100;
+            _nextLevelExp = 100 - (exp % 100);
             _isLoading = false;
           });
         }
@@ -79,6 +89,26 @@ class _ProfilePageState extends State<ProfilePage>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  Map<String, dynamic> _getTierInfo(int level) {
+    if (level <= 50) {
+      return {'name': '없음', 'color': Colors.grey};
+    } else if (level <= 100) {
+      return {'name': '브론즈', 'color': const Color(0xFFCD7F32)};
+    } else if (level <= 150) {
+      return {'name': '실버', 'color': const Color(0xFFC0C0C0)};
+    } else if (level <= 200) {
+      return {'name': '골드', 'color': const Color(0xFFFFD700)};
+    } else if (level <= 250) {
+      return {'name': '플래티넘', 'color': const Color(0xFFE5E4E2)};
+    } else {
+      return {'name': '다이아', 'color': const Color(0xFFB9F2FF)};
+    }
+  }
+
+  double _getGlowIntensity(int streak) {
+    return (streak ~/ 50) * 0.3 + 0.3;
   }
 
   @override
@@ -164,14 +194,23 @@ class _ProfilePageState extends State<ProfilePage>
                 // 프로필 사진 (배경과 겹치게 배치)
                 Positioned(
                   bottom: -50,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 4),
+                  child: CustomPaint(
+                    painter: GlowPainter(
+                      glowIntensity: _getGlowIntensity(_streak),
+                      animation: _animation,
                     ),
-                    child: const CircleAvatar(
-                      radius: 50,
-                      child: Icon(Icons.person, size: 60),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _getTierInfo(_level)['color'],
+                          width: 6,
+                        ),
+                      ),
+                      child: const CircleAvatar(
+                        radius: 50,
+                        child: Icon(Icons.person, size: 60),
+                      ),
                     ),
                   ),
                 ),
@@ -201,7 +240,10 @@ class _ProfilePageState extends State<ProfilePage>
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildStatItem(Icons.access_time, '$_streak일 연속 해결!'),
-                      _buildStatItem(Icons.emoji_events, '35135점'),
+                      _buildStatItem(
+                        Icons.emoji_events,
+                        '레벨 $_level • 레벨업까지 $_nextLevelExp EXP',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -306,4 +348,30 @@ class _ProfilePageState extends State<ProfilePage>
       ],
     );
   }
+}
+
+class GlowPainter extends CustomPainter {
+  final double glowIntensity;
+  final Animation<double> animation;
+
+  GlowPainter({required this.glowIntensity, required this.animation})
+    : super(repaint: animation);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // 후광 효과 그리기
+    for (int i = 3; i > 0; i--) {
+      final paint = Paint()
+        ..color = AppColors.primary.withValues(
+          alpha: glowIntensity * 0.15 * i * animation.value,
+        )
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 10.0 * i);
+
+      canvas.drawCircle(center, radius + (10.0 * i), paint);
+    }
+  }
+
 }
