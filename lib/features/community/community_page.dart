@@ -24,15 +24,8 @@ class _CommunityPageState extends State<CommunityPage> {
   Future<void> _loadPosts() async {
     setState(() => _isLoading = true);
 
-    print('[DEBUG] 게시글 목록 로드 시작');
-
     try {
       final response = await ApiService.get('/api/consent-request/community');
-
-      print('[DEBUG] API 응답 - success: ${response.success}');
-      print('[DEBUG] API 응답 - statusCode: ${response.statusCode}');
-      print('[DEBUG] API 응답 - data type: ${response.data?.runtimeType}');
-      print('[DEBUG] API 응답 - data: ${response.data}');
 
       if (response.success && response.data != null) {
         if (mounted) {
@@ -40,8 +33,6 @@ class _CommunityPageState extends State<CommunityPage> {
             _posts = (response.data as List)
                 .map((post) {
                   try {
-                    print('[DEBUG] 게시글 파싱 중: ${post['consentRequestId']}');
-                    
                     // createdAt 날짜 파싱
                     String dateStr;
                     try {
@@ -52,7 +43,6 @@ class _CommunityPageState extends State<CommunityPage> {
                         dateStr = DateTime.now().toString().substring(0, 10);
                       }
                     } catch (e) {
-                      print('[DEBUG] 날짜 파싱 실패, 기본값 사용: $e');
                       dateStr = DateTime.now().toString().substring(0, 10);
                     }
                     
@@ -68,19 +58,16 @@ class _CommunityPageState extends State<CommunityPage> {
                       comments: 0, // 댓글 기능 제거됨
                     );
                   } catch (e) {
-                    print('[DEBUG] 게시글 파싱 실패: $e');
                     return null;
                   }
                 })
                 .where((post) => post != null)
                 .cast<CommunityPost>()
                 .toList();
-            print('[DEBUG] 파싱된 게시글 수: ${_posts.length}');
             _isLoading = false;
           });
         }
       } else {
-        print('[DEBUG] API 호출 실패 또는 데이터 없음');
         if (mounted) {
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(
@@ -96,7 +83,6 @@ class _CommunityPageState extends State<CommunityPage> {
         }
       }
     } catch (e) {
-      print('[DEBUG] 예외 발생: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(

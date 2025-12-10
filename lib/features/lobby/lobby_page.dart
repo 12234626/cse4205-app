@@ -264,6 +264,104 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     }
   }
 
+  // 출석 퀘스트 완료 처리
+  Future<void> _completeAttendanceQuest(int userQuestId) async {
+    try {
+      final response = await ApiService.post(
+        '/api/user-quest/$userQuestId/complete',
+      );
+
+      // 204 No Content 응답 또는 success true인 경우 성공으로 처리
+      // API는 204를 반환하지만 ApiService에서 파싱 오류가 발생할 수 있음
+      if (response.statusCode == 204 || response.success) {
+        if (mounted) {
+          // 먼저 로컬 상태를 즉시 업데이트
+          setState(() {
+            final questIndex = _dailyQuests.indexWhere(
+              (q) => q['userQuestId'] == userQuestId,
+            );
+            if (questIndex != -1) {
+              _dailyQuests[questIndex]['status'] = 'CONSENTED';
+              _dailyQuests[questIndex]['completedAt'] = DateTime.now().toIso8601String();
+            }
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('출석 완료! 경험치를 획득했습니다.'),
+              duration: Duration(seconds: 2),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // 프로필 정보 새로고침 (경험치 업데이트)
+          _loadUserProfile();
+          
+          // 약간의 지연 후 퀘스트 목록도 새로고침
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              _loadDailyQuests();
+            }
+          });
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                response.message?.toString() ?? '출석 처리에 실패했습니다.',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // FormatException이 발생해도 204 응답일 가능성이 높으므로 성공으로 처리
+      if (e.toString().contains('FormatException')) {
+        if (mounted) {
+          // 로컬 상태를 즉시 업데이트
+          setState(() {
+            final questIndex = _dailyQuests.indexWhere(
+              (q) => q['userQuestId'] == userQuestId,
+            );
+            if (questIndex != -1) {
+              _dailyQuests[questIndex]['status'] = 'CONSENTED';
+              _dailyQuests[questIndex]['completedAt'] = DateTime.now().toIso8601String();
+            }
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('출석 완료! 경험치를 획득했습니다.'),
+              duration: Duration(seconds: 2),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // 프로필 정보 새로고침
+          _loadUserProfile();
+          
+          // 약간의 지연 후 퀘스트 목록도 새로고침
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              _loadDailyQuests();
+            }
+          });
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('오류가 발생했습니다: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -491,7 +589,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                       quest['title'],
                       '+${quest['expReward']}',
                       userQuestId: quest['userQuestId'],
-                      isCompleted: quest['status'] == 'COMPLETED',
+                      isCompleted: quest['status'] == 'CONSENTED',
                       isReadyForAuth: _questsReadyForAuth.contains(
                         quest['userQuestId'],
                       ),
@@ -789,6 +887,9 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     bool isCompleted = false,
     bool isReadyForAuth = false,
   }) {
+    // 출석 퀘스트 여부 확인
+    final isAttendanceQuest = title.contains('출석');
+
     return Card(
       elevation: 6,
       child: Container(
@@ -816,23 +917,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               ),
               if (points != null)
                 isCompleted
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.amber[700],
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          '완료',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      )
+                    ? _buildCompletedButton()
                     : AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         transitionBuilder:
@@ -848,7 +933,10 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                         child: ElevatedButton(
                           key: ValueKey<bool>(isReadyForAuth),
                           onPressed: () async {
-                            if (isReadyForAuth) {
+                            if (isAttendanceQuest) {
+                              // 출석 퀘스트는 바로 완료 처리
+                              await _completeAttendanceQuest(userQuestId);
+                            } else if (isReadyForAuth) {
                               // 기존 타이머 취소
                               _authButtonTimers[userQuestId]?.cancel();
                               _authButtonTimers.remove(userQuestId);
@@ -938,6 +1026,79 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: onTap,
       ),
+    );
+  }
+
+  // 스파클 효과가 있는 완료 버튼
+  Widget _buildCompletedButton() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // 메인 완료 버튼
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.amber[700],
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.amber.withOpacity(0.4),
+                blurRadius: 8,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: Colors.white,
+                size: 18,
+              ),
+              const SizedBox(width: 4),
+              const Text(
+                '완료',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // 스파클 이펙트들
+        Positioned(
+          top: -4,
+          right: -4,
+          child: Icon(
+            Icons.auto_awesome,
+            color: Colors.yellow[300],
+            size: 16,
+          ),
+        ),
+        Positioned(
+          top: -2,
+          left: -2,
+          child: Icon(
+            Icons.star,
+            color: Colors.amber[300],
+            size: 12,
+          ),
+        ),
+        Positioned(
+          bottom: -2,
+          right: 8,
+          child: Icon(
+            Icons.star,
+            color: Colors.orange[300],
+            size: 10,
+          ),
+        ),
+      ],
     );
   }
 
