@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../common/constants.dart';
 import '../../models/community_post_model.dart';
 import '../../services/api_service.dart';
-import 'community_detail_page.dart';
+import 'consent_post_detail_page.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -29,41 +29,107 @@ class _CommunityPageState extends State<CommunityPage> {
 
       if (response.success && response.data != null) {
         if (mounted) {
+          final List<CommunityPost> posts = [];
+          
+          for (var postData in response.data as List) {
+            try {
+              // API 응답 구조:
+              // - consentRequestId: number
+              // - userQuestId: number
+              // - title: string | null
+              // - content: string | null (마크다운 형식)
+              // - createdAt: Date (ISO 8601 문자열)
+              // - updatedAt: Date
+              // - author: { userId, role, username, avatarUrl, exp, level, ... }
+              // - images: [{ consentRequestImageId, imageUrl }]
+              // - reviews: [{ consentReviewId, comment, createdAt, reviewer: UserDto }]
+              
+              // author를 안전하게 추출
+              final authorData = postData['author'];
+              if (authorData == null || authorData is! Map<String, dynamic>) {
+                debugPrint('Invalid author data: $authorData');
+                continue;
+              }
+              final author = authorData as Map<String, dynamic>;
+              
+              // reviews를 안전하게 추출하고 유효한 reviewer가 있는 것만 필터링
+              final reviewsData = postData['reviews'];
+              List<dynamic> reviews = [];
+              if (reviewsData is List) {
+                reviews = reviewsData.where((review) {
+                  // reviewer가 null이 아니고 Map인 경우만 포함
+                  return review != null && 
+                         review is Map<String, dynamic> && 
+                         review['reviewer'] != null;
+                }).toList();
+              }
+              
+              // content를 안전하게 문자열로 변환
+              final rawContent = postData['content'];
+              String contentText;
+              
+              if (rawContent is Map<String, dynamic>) {
+                contentText = rawContent['text']?.toString() ?? '';
+              } else if (rawContent is String) {
+                contentText = rawContent;
+              } else {
+                contentText = rawContent?.toString() ?? '';
+              }
+              
+              // createdAt을 날짜 형식으로 변환
+              String dateStr;
+              try {
+                final createdAt = postData['createdAt'];
+                if (createdAt is String && createdAt.length >= 10) {
+                  dateStr = createdAt.substring(0, 10);
+                } else {
+                  dateStr = DateTime.now().toIso8601String().substring(0, 10);
+                }
+              } catch (e) {
+                dateStr = DateTime.now().toIso8601String().substring(0, 10);
+              }
+              
+              // userQuestId 안전하게 파싱
+              final userQuestId = postData['userQuestId'];
+              int userQuestIdInt;
+              if (userQuestId is int) {
+                userQuestIdInt = userQuestId;
+              } else {
+                userQuestIdInt = int.tryParse(userQuestId?.toString() ?? '0') ?? 0;
+              }
+              
+              // userId 안전하게 파싱
+              final userId = author['userId'];
+              String userIdStr;
+              if (userId is int) {
+                userIdStr = userId.toString();
+              } else {
+                userIdStr = userId?.toString() ?? '0';
+              }
+              
+              final post = CommunityPost(
+                id: postData['consentRequestId'].toString(),
+                userQuestId: userQuestIdInt,
+                authorId: userIdStr,
+                authorNickname: author['username']?.toString() ?? '사용자',
+                title: postData['title']?.toString() ?? '제목 없음',
+                content: contentText,
+                date: dateStr,
+                views: 0,
+                likes: reviews.length,
+                comments: 0,
+              );
+              
+              posts.add(post);
+            } catch (e, stackTrace) {
+              // 개별 게시글 파싱 실패 시 로그 출력하고 계속 진행
+              debugPrint('게시글 파싱 오류: $e');
+              debugPrint('Stack trace: $stackTrace');
+            }
+          }
+          
           setState(() {
-            _posts = (response.data as List)
-                .map((post) {
-                  try {
-                    // createdAt 날짜 파싱
-                    String dateStr;
-                    try {
-                      final createdAt = post['createdAt'];
-                      if (createdAt != null && createdAt is String && createdAt.length >= 10) {
-                        dateStr = createdAt.substring(0, 10);
-                      } else {
-                        dateStr = DateTime.now().toString().substring(0, 10);
-                      }
-                    } catch (e) {
-                      dateStr = DateTime.now().toString().substring(0, 10);
-                    }
-                    
-                    return CommunityPost(
-                      id: post['consentRequestId'].toString(),
-                      authorId: post['author']['userId'].toString(),
-                      authorNickname: post['author']['username'] ?? '사용자',
-                      title: post['title'] ?? '제목 없음',
-                      content: post['content'] ?? '',
-                      date: dateStr,
-                      views: 0, // API에 views 없음
-                      likes: post['reviews']?.length ?? 0, // 리뷰 수를 likes로 사용
-                      comments: 0, // 댓글 기능 제거됨
-                    );
-                  } catch (e) {
-                    return null;
-                  }
-                })
-                .where((post) => post != null)
-                .cast<CommunityPost>()
-                .toList();
+            _posts = posts;
             _isLoading = false;
           });
         }
@@ -187,7 +253,10 @@ class _CommunityPageState extends State<CommunityPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => CommunityDetailPage(post: post),
+              builder: (context) => ConsentPostDetailPage(
+                userQuestId: post.userQuestId,
+                requestType: 'COMMUNITY',
+              ),
             ),
           );
         },
@@ -210,7 +279,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
               // 내용 미리보기
               Text(
-                _getPreviewText(post.content),
+                _getPreviewText(post.content.toString()),
                 style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
