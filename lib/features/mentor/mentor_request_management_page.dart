@@ -174,7 +174,6 @@ class _MentorRequestManagementPageState
                   final request = _requests[index];
                   final status = request['status']?.toString() ?? 'PENDING';
                   final isPending = status == 'PENDING';
-                  // TODO : 수락/거절 에러 처리 수정하기
                   return Card(
                     elevation: 4,
                     margin: const EdgeInsets.only(bottom: 12.0),
