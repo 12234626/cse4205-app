@@ -7,6 +7,7 @@ import '../survey/carbon_survey_page.dart';
 import '../guide/guidelines.dart';
 import '../community/community_page.dart';
 import '../community/community_write_page.dart';
+import '../community/consent_post_detail_page.dart';
 import '../../services/api_service.dart';
 import '../mentor/mentor_request_page.dart';
 import '../mentor/mentor_request_management_page.dart';
@@ -85,6 +86,20 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
       final response = await ApiService.post('/api/user-quest/daily/assign');
 
       if (response.success && response.data != null) {
+        // 커뮤니티 게시글 목록 가져오기
+        final postsResponse = await ApiService.get('/api/consent-request/community');
+        final List<int> postedUserQuestIds = [];
+        
+        if (postsResponse.success && postsResponse.data != null) {
+          postedUserQuestIds.addAll(
+            (postsResponse.data as List)
+                .map((post) => post['userQuestId'] as int?)
+                .where((id) => id != null)
+                .cast<int>()
+                .toList()
+          );
+        }
+
         if (mounted) {
           setState(() {
             _dailyQuests = (response.data as List)
@@ -96,13 +111,18 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                     return null;
                   }
 
+                  final userQuestId = userQuest['userQuestId'] as int;
+                  final status = userQuest['status'] ?? 'PENDING';
+                  final hasPost = postedUserQuestIds.contains(userQuestId);
+
                   return {
-                    'userQuestId': userQuest['userQuestId'],
+                    'userQuestId': userQuestId,
                     'questId': quest['questId'],
                     'title': quest['title'] ?? '퀘스트',
                     'expReward': quest['expReward'] ?? 0,
-                    'status': userQuest['status'] ?? 'PENDING',
+                    'status': status,
                     'completedAt': userQuest['completedAt'],
+                    'hasPost': hasPost, // 게시글 작성 여부
                   };
                 })
                 .where((quest) => quest != null)
@@ -593,6 +613,8 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                       isReadyForAuth: _questsReadyForAuth.contains(
                         quest['userQuestId'],
                       ),
+                      status: quest['status'],
+                      hasPost: quest['hasPost'] ?? false,
                     ),
                   );
                 }),
@@ -886,9 +908,13 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     required int userQuestId,
     bool isCompleted = false,
     bool isReadyForAuth = false,
+    String status = 'PENDING',
+    bool hasPost = false,
   }) {
     // 출석 퀘스트 여부 확인
     final isAttendanceQuest = title.contains('출석');
+    // 인증 대기 중인지 확인 (출석 제외 + PENDING 상태 + 게시글 작성함)
+    final isPending = !isAttendanceQuest && status == 'PENDING' && hasPost;
 
     return Card(
       elevation: 6,
@@ -918,7 +944,9 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               if (points != null)
                 isCompleted
                     ? _buildCompletedButton()
-                    : AnimatedSwitcher(
+                    : isPending
+                        ? _buildPendingButton(userQuestId)
+                        : AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         transitionBuilder:
                             (Widget child, Animation<double> animation) {
@@ -1099,6 +1127,56 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
           ),
         ),
       ],
+    );
+  }
+
+  // 인증 대기 중 버튼
+  Widget _buildPendingButton(int userQuestId) {
+    return ElevatedButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ConsentPostDetailPage(
+              userQuestId: userQuestId,
+              requestType: 'COMMUNITY',
+            ),
+          ),
+        ).then((_) {
+          // 상세 페이지에서 돌아왔을 때 퀘스트 목록 새로고침
+          _loadDailyQuests();
+        });
+      },
+      style: ElevatedButton.styleFrom(
+        elevation: 4,
+        backgroundColor: Colors.orange[100],
+        foregroundColor: Colors.orange[800],
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.schedule,
+            size: 18,
+            color: Colors.orange[800],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '인증 대기 중',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.orange[800],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -1,5 +1,6 @@
 class CommunityPost {
   final String id;
+  final int userQuestId;
   final String authorId;
   final String authorNickname;
   final String title;
@@ -13,6 +14,7 @@ class CommunityPost {
 
   CommunityPost({
     required this.id,
+    required this.userQuestId,
     required this.authorId,
     required this.authorNickname,
     required this.title,
@@ -27,23 +29,25 @@ class CommunityPost {
 
   factory CommunityPost.fromJson(Map<String, dynamic> json) {
     return CommunityPost(
-      id: json['id'],
-      authorId: json['authorId'],
-      authorNickname: json['authorNickname'],
-      title: json['title'],
-      content: json['content'],
-      date: json['date'],
-      views: json['views'] ?? 0,
-      likes: json['likes'] ?? 0,
-      dislikes: json['dislikes'] ?? 0,
-      comments: json['comments'] ?? 0,
-      imageUrl: json['imageUrl'],
+      id: json['id']?.toString() ?? json['consentRequestId']?.toString() ?? '',
+      userQuestId: json['userQuestId'] as int,
+      authorId: json['authorId']?.toString() ?? json['author']?['userId']?.toString() ?? '',
+      authorNickname: json['authorNickname']?.toString() ?? json['author']?['username']?.toString() ?? '사용자',
+      title: json['title']?.toString() ?? '제목 없음',
+      content: json['content']?.toString() ?? '',
+      date: json['date']?.toString() ?? DateTime.now().toString().substring(0, 10),
+      views: json['views'] as int? ?? 0,
+      likes: json['likes'] as int? ?? 0,
+      dislikes: json['dislikes'] as int? ?? 0,
+      comments: json['comments'] as int? ?? 0,
+      imageUrl: json['imageUrl']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'userQuestId': userQuestId,
       'authorId': authorId,
       'authorNickname': authorNickname,
       'title': title,
