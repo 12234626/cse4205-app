@@ -96,6 +96,33 @@ class ApiService {
     }
   }
 
+  static Future<bool> _refreshToken() async {
+    try {
+      final refreshToken = await _getToken('refresh');
+
+      if (refreshToken == null) return false;
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl/api/auth/refresh'),
+        headers: await _getHeaders({}, 'refresh'),
+      );
+      final body = _formatResponse(response);
+
+      if (body.success == true) {
+        final accessToken = body.data['accessToken'];
+        final refreshToken = body.data['refreshToken'];
+
+        await setToken(accessToken, refreshToken);
+
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
+
   static Future<http.Response> _handleResponse(
     http.Response response,
     Future<http.Response> Function() request,
