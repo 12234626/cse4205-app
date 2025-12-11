@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../common/constants.dart';
 import '../../models/community_post_model.dart';
+import '../../services/api_service.dart';
 
 class CommunityDetailPage extends StatefulWidget {
   final CommunityPost post;
@@ -15,11 +16,57 @@ class CommunityDetailPage extends StatefulWidget {
 class _CommunityDetailPageState extends State<CommunityDetailPage> {
   bool _isLiked = false;
   int _likeCount = 0;
+  List<String> _presignedImageUrls = []; // Presigned URL로 변환된 이미지 목록
+  bool _isLoadingImages = false;
 
   @override
   void initState() {
     super.initState();
     _likeCount = widget.post.likes;
+    _loadPresignedImages();
+  }
+
+  // S3 이미지 URL을 Presigned GET URL로 변환
+  Future<void> _loadPresignedImages() async {
+    if (widget.post.images == null || widget.post.images!.isEmpty) {
+      return;
+    }
+
+    setState(() => _isLoadingImages = true);
+
+    try {
+      final presignedUrls = <String>[];
+
+      for (final imageUrl in widget.post.images!) {
+        try {
+          // URL 인코딩하여 쿼리 파라미터로 추가
+          final encodedUrl = Uri.encodeComponent(imageUrl);
+          final response = await ApiService.get(
+            '/api/upload/presigned-get-url?fileUrl=$encodedUrl',
+          );
+
+          if (response.success && response.data != null) {
+            presignedUrls.add(response.data['url']);
+          } else {
+            print('[DEBUG] Presigned URL 생성 실패: $imageUrl');
+          }
+        } catch (e) {
+          print('[DEBUG] Presigned URL 생성 오류: $e');
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _presignedImageUrls = presignedUrls;
+          _isLoadingImages = false;
+        });
+      }
+    } catch (e) {
+      print('[DEBUG] 이미지 로드 오류: $e');
+      if (mounted) {
+        setState(() => _isLoadingImages = false);
+      }
+    }
   }
 
   void _toggleLike() {
@@ -134,7 +181,79 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                       ),
                     ),
 
-                    if (widget.post.imageUrl != null) ...[
+                    // 이미지 표시 (Presigned URL)
+                    if (_isLoadingImages)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (_presignedImageUrls.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      ..._presignedImageUrls.map(
+                        (imageUrl) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              errorBuilder: (context, error, stackTrace) {
+                                print('[DEBUG] 이미지 로드 실패: $imageUrl');
+                                return Container(
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.error,
+                                        size: 48,
+                                        color: Colors.grey[600],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '이미지를 불러올 수 없습니다',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      height: 200,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[200],
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          value:
+                                              loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ] else if (widget.post.imageUrl != null) ...[
                       const SizedBox(height: 20),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
