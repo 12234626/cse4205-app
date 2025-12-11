@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'constants.dart';
-import 'models/guideline_post_model.dart';
-import 'services/guideline_storage.dart';
+import '../../common/constants.dart';
+import '../../models/guideline_post_model.dart';
 
 class GuidelineWritePage extends StatefulWidget {
   final GuidelinePost? postToEdit;
@@ -22,7 +21,7 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
   String? _imagePath;
   final ImagePicker _picker = ImagePicker();
   bool _isCategoryExpanded = false;
-  bool _showPreview = true;
+  bool _showPreview = false;
 
   // 수정 모드 관련 변수
   String? _originalTitle;
@@ -60,15 +59,7 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
   }
 
   Future<void> _loadDraft() async {
-    final draft = await GuidelineStorage.getDraft();
-    if (draft != null) {
-      setState(() {
-        _titleController.text = draft.title;
-        _contentController.text = draft.content;
-        _selectedCategory = draft.category;
-        _imagePath = draft.imageUrl;
-      });
-    }
+    // TODO: API 연동 필요
   }
 
   bool get _hasChanges {
@@ -212,22 +203,11 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
   }
 
   Future<void> _saveDraft() async {
-    final post = GuidelinePost(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      category: _selectedCategory,
-      title: _titleController.text,
-      content: _contentController.text,
-      date: DateTime.now().toString().substring(0, 19),
-      imageUrl: _imagePath,
-      isDraft: true,
-    );
-
-    await GuidelineStorage.saveDraft(post);
-
+    // TODO: API 연동 필요
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('임시저장되었습니다.')));
+      ).showSnackBar(const SnackBar(content: Text('임시저장 기능은 준비 중입니다.')));
     }
   }
 
@@ -248,45 +228,21 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
 
     // 수정 모드인 경우
     if (widget.postToEdit != null) {
-      final updatedPost = GuidelinePost(
-        id: widget.postToEdit!.id,
-        category: _selectedCategory,
-        title: _titleController.text,
-        content: _contentController.text,
-        date: widget.postToEdit!.date,
-        imageUrl: _imagePath,
-        isDraft: false,
-      );
-
-      final posts = await GuidelineStorage.getPosts();
-      final index = posts.indexWhere((p) => p.id == updatedPost.id);
-      if (index != -1) {
-        posts[index] = updatedPost;
-        await GuidelineStorage.savePosts(posts);
-      }
-
+      // TODO: API 연동 필요
       if (mounted) {
-        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('수정 기능은 준비 중입니다.')));
       }
       return;
     }
 
     // 신규 작성 모드인 경우
-    final post = GuidelinePost(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      category: _selectedCategory,
-      title: _titleController.text,
-      content: _contentController.text,
-      date: DateTime.now().toString().substring(0, 19),
-      imageUrl: _imagePath,
-      isDraft: false,
-    );
-
-    await GuidelineStorage.addPost(post);
-    await GuidelineStorage.deleteDraft();
-
+    // TODO: API 연동 필요
     if (mounted) {
-      Navigator.of(context).pop(true);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('등록 기능은 준비 중입니다.')));
     }
   }
 

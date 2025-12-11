@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'constants.dart';
-import 'services/auth_service.dart';
-import 'services/api_service.dart';
+import '../../common/constants.dart';
+import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
 
 class SignupStepPage extends StatefulWidget {
   final String? provider;
@@ -19,7 +19,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
 
   // 폼 데이터
   DateTime? _birthDate;
-  String _selectedRole = 'mentee'; // 기본값: mentee (학생)
+  String _selectedRole = 'MENTEE'; // 기본값: MENTEE (학생)
 
   // 닉네임 관련
   final TextEditingController _nicknameController = TextEditingController();
@@ -30,7 +30,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
   // 멘토 닉네임 관련
   final TextEditingController _mentorNicknameController =
       TextEditingController();
-  int? _mentorUserId;
+  String? _mentorNickname;
   String? _mentorNicknameErrorMessage;
   bool _isMentorNicknameValid = false;
 
@@ -158,7 +158,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
         setState(() {
           _mentorNicknameErrorMessage = '해당 닉네임의 사용자를 찾을 수 없습니다.';
           _isMentorNicknameValid = false;
-          _mentorUserId = null;
+          _mentorNickname = null;
           _isLoading = false;
         });
         return;
@@ -168,25 +168,22 @@ class _SignupStepPageState extends State<SignupStepPage> {
       final userData = response.data;
       final userRole = userData['role'];
 
-      // userId 필드명 확인 (userId 또는 id)
-      final userId = userData['userId'] ?? userData['id'];
-
-      if (userId == null) {
+      if (userRole == null) {
         setState(() {
           _mentorNicknameErrorMessage = '사용자 정보를 가져올 수 없습니다.';
           _isMentorNicknameValid = false;
-          _mentorUserId = null;
+          _mentorNickname = null;
           _isLoading = false;
         });
         return;
       }
 
       // 멘토 역할 확인
-      if (userRole != 'mentor') {
+      if (userRole != 'MENTOR') {
         setState(() {
           _mentorNicknameErrorMessage = '해당 사용자는 멘토가 아닙니다.';
           _isMentorNicknameValid = false;
-          _mentorUserId = null;
+          _mentorNickname = null;
           _isLoading = false;
         });
         return;
@@ -196,8 +193,8 @@ class _SignupStepPageState extends State<SignupStepPage> {
       setState(() {
         _mentorNicknameErrorMessage = null;
         _isMentorNicknameValid = true;
-        _mentorUserId = userId;
-        _selectedRole = 'mentee'; // 멘토를 입력한 경우 자동으로 mentee로 설정
+        _mentorNickname = mentorNickname;
+        _selectedRole = 'MENTEE'; // 멘토를 입력한 경우 자동으로 MENTEE로 설정
         _isLoading = false;
       });
 
@@ -208,7 +205,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
         setState(() {
           _mentorNicknameErrorMessage = '멘토 확인 중 오류가 발생했습니다.';
           _isMentorNicknameValid = false;
-          _mentorUserId = null;
+          _mentorNickname = null;
           _isLoading = false;
         });
       }
@@ -273,11 +270,11 @@ class _SignupStepPageState extends State<SignupStepPage> {
       if (!mounted) return;
 
       // 멘토 닉네임을 입력했고 유효한 경우, 멘토 요청 전송
-      if (_mentorUserId != null && _isMentorNicknameValid) {
+      if (_mentorNickname != null && _isMentorNicknameValid) {
         try {
           final requestResponse = await ApiService.post(
             '/api/user/mentor-request',
-            body: {'mentorId': _mentorUserId},
+            body: {'otherUsername': _mentorNickname},
           );
 
           if (!mounted) return;
@@ -583,7 +580,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
               setState(() {
                 _mentorNicknameErrorMessage = null;
                 _isMentorNicknameValid = false;
-                _mentorUserId = null;
+                _mentorNickname = null;
               });
             },
           ),
@@ -640,7 +637,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                         _mentorNicknameController.clear();
                         _mentorNicknameErrorMessage = null;
                         _isMentorNicknameValid = false;
-                        _mentorUserId = null;
+                        _mentorNickname = null;
                       });
                       _nextStep();
                     },
@@ -677,20 +674,20 @@ class _SignupStepPageState extends State<SignupStepPage> {
 
           // mentee (학생) 선택
           InkWell(
-            onTap: _mentorUserId != null
+            onTap: _mentorNickname != null
                 ? null
-                : () => setState(() => _selectedRole = 'mentee'),
+                : () => setState(() => _selectedRole = 'MENTEE'),
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: _selectedRole == 'mentee'
+                  color: _selectedRole == 'MENTEE'
                       ? AppColors.primary
                       : Colors.grey[300]!,
                   width: 2,
                 ),
                 borderRadius: BorderRadius.circular(8),
-                color: _selectedRole == 'mentee'
+                color: _selectedRole == 'MENTEE'
                     ? AppColors.primary.withValues(alpha: 0.1)
                     : Colors.white,
               ),
@@ -699,7 +696,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                   Icon(
                     Icons.school,
                     size: 40,
-                    color: _selectedRole == 'mentee'
+                    color: _selectedRole == 'MENTEE'
                         ? AppColors.primary
                         : Colors.grey[600],
                   ),
@@ -713,7 +710,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: _selectedRole == 'mentee'
+                            color: _selectedRole == 'MENTEE'
                                 ? AppColors.primary
                                 : Colors.black,
                           ),
@@ -729,7 +726,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                       ],
                     ),
                   ),
-                  if (_selectedRole == 'mentee')
+                  if (_selectedRole == 'MENTEE')
                     Icon(Icons.check_circle, color: AppColors.primary),
                 ],
               ),
@@ -739,22 +736,22 @@ class _SignupStepPageState extends State<SignupStepPage> {
 
           // mentor (학부모/멘토) 선택
           Opacity(
-            opacity: _mentorUserId != null ? 0.5 : 1.0,
+            opacity: _mentorNickname != null ? 0.5 : 1.0,
             child: InkWell(
-              onTap: _mentorUserId != null
+              onTap: _mentorNickname != null
                   ? null
-                  : () => setState(() => _selectedRole = 'mentor'),
+                  : () => setState(() => _selectedRole = 'MENTOR'),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _selectedRole == 'mentor'
+                    color: _selectedRole == 'MENTOR'
                         ? AppColors.primary
                         : Colors.grey[300]!,
                     width: 2,
                   ),
                   borderRadius: BorderRadius.circular(8),
-                  color: _selectedRole == 'mentor'
+                  color: _selectedRole == 'MENTOR'
                       ? AppColors.primary.withValues(alpha: 0.1)
                       : Colors.white,
                 ),
@@ -763,7 +760,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                     Icon(
                       Icons.family_restroom,
                       size: 40,
-                      color: _selectedRole == 'mentor'
+                      color: _selectedRole == 'MENTOR'
                           ? AppColors.primary
                           : Colors.grey[600],
                     ),
@@ -777,7 +774,7 @@ class _SignupStepPageState extends State<SignupStepPage> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: _selectedRole == 'mentor'
+                              color: _selectedRole == 'MENTOR'
                                   ? AppColors.primary
                                   : Colors.black,
                             ),
@@ -793,14 +790,14 @@ class _SignupStepPageState extends State<SignupStepPage> {
                         ],
                       ),
                     ),
-                    if (_selectedRole == 'mentor')
+                    if (_selectedRole == 'MENTOR')
                       Icon(Icons.check_circle, color: AppColors.primary),
                   ],
                 ),
               ),
             ),
           ),
-          if (_mentorUserId != null)
+          if (_mentorNickname != null)
             Padding(
               padding: const EdgeInsets.only(top: 16.0),
               child: Container(

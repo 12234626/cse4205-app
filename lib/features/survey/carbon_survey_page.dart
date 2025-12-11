@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
-import 'models/carbon_survey.dart';
+import '../../common/constants.dart';
+import '../../models/carbon_survey.dart';
 import 'carbon_survey_result_page.dart';
 
 class CarbonSurveyPage extends StatefulWidget {

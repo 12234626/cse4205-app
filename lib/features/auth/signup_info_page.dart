@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
+import '../../common/constants.dart';
 
 class SignupInfoPage extends StatefulWidget {
   const SignupInfoPage({super.key});
@@ -35,9 +35,12 @@ class _SignupInfoPageState extends State<SignupInfoPage> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 40),
-            
+
             // 로그인 방법 표시
-            const Text('로그인 방법', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text(
+              '로그인 방법',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),
@@ -48,9 +51,12 @@ class _SignupInfoPageState extends State<SignupInfoPage> {
               child: const Text('구글 로그인'),
             ),
             const SizedBox(height: 24),
-            
+
             // 닉네임 입력
-            const Text('닉네임', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text(
+              '닉네임',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: _nicknameController,
@@ -58,12 +64,16 @@ class _SignupInfoPageState extends State<SignupInfoPage> {
                 hintText: '닉네임',
                 border: OutlineInputBorder(),
               ),
-              onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+              onTapOutside: (event) =>
+                  FocusManager.instance.primaryFocus?.unfocus(),
             ),
             const SizedBox(height: 24),
-            
+
             // 역할 선택
-            const Text('역할', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text(
+              '역할',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -95,7 +105,7 @@ class _SignupInfoPageState extends State<SignupInfoPage> {
               ],
             ),
             const SizedBox(height: 40),
-            
+
             // 시작하기 버튼
             SizedBox(
               width: double.infinity,

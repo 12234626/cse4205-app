@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'constants.dart';
-import 'services/api_service.dart';
+import '../../common/constants.dart';
+import '../../services/api_service.dart';
+import '../../services/auth_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -71,7 +72,6 @@ class _SettingsPageState extends State<SettingsPage> {
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop(); // 다이얼로그 닫기
-                await ApiService.setToken(null, null); // 토큰 삭제
                 if (mounted) {
                   Navigator.pushNamedAndRemoveUntil(
                     context,
@@ -94,7 +94,9 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('회원 탈퇴'),
-          content: const Text('정말로 탈퇴하시겠습니까?\n모든 데이터가 삭제되며 복구할 수 없습니다.'),
+          content: const Text(
+            '정말로 탈퇴하시겠습니까?\n모든 데이터가 삭제되며 복구할 수 없고, 재가입이 불가합니다.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -113,42 +115,55 @@ class _SettingsPageState extends State<SettingsPage> {
     if (confirmed != true) return;
 
     try {
-      // 현재 사용자 정보 가져오기
-      final profileResponse = await ApiService.get('/api/user/profile');
+      // 회원 탈퇴 API 호출
+      final response = await ApiService.delete('/api/user');
 
-      if (!profileResponse.success || profileResponse.data == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('사용자 정보를 가져올 수 없습니다.')));
-        }
-        return;
+      // 탈퇴 후 로그아웃 처리 (오류 무시)
+      try {
+        await AuthService.logoutAll();
+      } catch (e) {
+        // 오류 발생해도 무시
       }
 
-      final userId = profileResponse.data['userId'];
-
-      // 회원 탈퇴 API 호출
-      final response = await ApiService.delete('/api/user/$userId');
-
       if (mounted) {
-        // 204 No Content는 성공으로 처리
-        if (response.success || response.statusCode == 204) {
-          await ApiService.setToken(null, null); // 토큰 삭제
+        if (response.success) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('회원 탈퇴가 완료되었습니다.')));
           Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response.message ?? '회원 탈퇴에 실패했습니다.')),
+            SnackBar(
+              content: Text(
+                '회원 탈퇴 실패: ${response.message}\n상태 코드: ${response.statusCode}',
+              ),
+              duration: const Duration(seconds: 5),
+            ),
           );
         }
       }
-    } catch (e) {
+    } on FormatException {
+      // 204 No Content로 body가 비어있어 JSON 파싱 실패한 경우 = 성공
+      try {
+        await AuthService.logoutAll();
+      } catch (e) {
+        // 오류 발생해도 무시
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: ${e.toString()}')));
+        ).showSnackBar(const SnackBar(content: Text('회원 탈퇴가 완료되었습니다.')));
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('오류 발생:\n${e.toString()}'),
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
     }
   }
