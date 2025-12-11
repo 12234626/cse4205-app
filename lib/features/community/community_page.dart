@@ -30,7 +30,7 @@ class _CommunityPageState extends State<CommunityPage> {
       if (response.success && response.data != null) {
         if (mounted) {
           final List<CommunityPost> posts = [];
-          
+
           for (var postData in response.data as List) {
             try {
               // API 응답 구조:
@@ -43,7 +43,7 @@ class _CommunityPageState extends State<CommunityPage> {
               // - author: { userId, role, username, avatarUrl, exp, level, ... }
               // - images: [{ consentRequestImageId, imageUrl }]
               // - reviews: [{ consentReviewId, comment, createdAt, reviewer: UserDto }]
-              
+
               // author를 안전하게 추출
               final authorData = postData['author'];
               if (authorData == null || authorData is! Map<String, dynamic>) {
@@ -51,23 +51,23 @@ class _CommunityPageState extends State<CommunityPage> {
                 continue;
               }
               final author = authorData as Map<String, dynamic>;
-              
+
               // reviews를 안전하게 추출하고 유효한 reviewer가 있는 것만 필터링
               final reviewsData = postData['reviews'];
               List<dynamic> reviews = [];
               if (reviewsData is List) {
                 reviews = reviewsData.where((review) {
                   // reviewer가 null이 아니고 Map인 경우만 포함
-                  return review != null && 
-                         review is Map<String, dynamic> && 
-                         review['reviewer'] != null;
+                  return review != null &&
+                      review is Map<String, dynamic> &&
+                      review['reviewer'] != null;
                 }).toList();
               }
-              
+
               // content를 안전하게 문자열로 변환
               final rawContent = postData['content'];
               String contentText;
-              
+
               if (rawContent is Map<String, dynamic>) {
                 contentText = rawContent['text']?.toString() ?? '';
               } else if (rawContent is String) {
@@ -75,7 +75,7 @@ class _CommunityPageState extends State<CommunityPage> {
               } else {
                 contentText = rawContent?.toString() ?? '';
               }
-              
+
               // createdAt을 날짜 형식으로 변환
               String dateStr;
               try {
@@ -88,16 +88,17 @@ class _CommunityPageState extends State<CommunityPage> {
               } catch (e) {
                 dateStr = DateTime.now().toIso8601String().substring(0, 10);
               }
-              
+
               // userQuestId 안전하게 파싱
               final userQuestId = postData['userQuestId'];
               int userQuestIdInt;
               if (userQuestId is int) {
                 userQuestIdInt = userQuestId;
               } else {
-                userQuestIdInt = int.tryParse(userQuestId?.toString() ?? '0') ?? 0;
+                userQuestIdInt =
+                    int.tryParse(userQuestId?.toString() ?? '0') ?? 0;
               }
-              
+
               // userId 안전하게 파싱
               final userId = author['userId'];
               String userIdStr;
@@ -106,7 +107,7 @@ class _CommunityPageState extends State<CommunityPage> {
               } else {
                 userIdStr = userId?.toString() ?? '0';
               }
-              
+
               final post = CommunityPost(
                 id: postData['consentRequestId'].toString(),
                 userQuestId: userQuestIdInt,
@@ -119,7 +120,7 @@ class _CommunityPageState extends State<CommunityPage> {
                 likes: reviews.length,
                 comments: 0,
               );
-              
+
               posts.add(post);
             } catch (e, stackTrace) {
               // 개별 게시글 파싱 실패 시 로그 출력하고 계속 진행
@@ -127,7 +128,7 @@ class _CommunityPageState extends State<CommunityPage> {
               debugPrint('Stack trace: $stackTrace');
             }
           }
-          
+
           setState(() {
             _posts = posts;
             _isLoading = false;
@@ -136,14 +137,9 @@ class _CommunityPageState extends State<CommunityPage> {
       } else {
         if (mounted) {
           setState(() => _isLoading = false);
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                response.message?.toString() ??
-                    '게시글을 불러오지 못했습니다.',
-              ),
+              content: Text(response.message?.toString() ?? '게시글을 불러오지 못했습니다.'),
             ),
           );
         }
