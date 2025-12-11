@@ -71,15 +71,54 @@ class ApiService {
   }
 
   static ResponseDto _formatResponse(http.Response response) {
-    final body = json.decode(response.body);
+    final rawBody = response.body;
 
-    return ResponseDto(
-      body['statusCode'] as int? ?? response.statusCode,
-      body['success'] as bool? ?? false,
-      body['data'],
-      body['error'],
-      body['message'],
-    );
+    // 🔎 무조건 찍는 공통 로그 (나중에 필요 없으면 지워도 됨)
+    print('================ [API RAW RESPONSE] ================');
+    print('Method: ${response.request?.method}');
+    print('URL: ${response.request?.url}');
+    print('Status: ${response.statusCode}');
+    print('Body length: ${rawBody.length}');
+    // 너무 길면 앞 300자만 잘라서
+    final preview = rawBody.length > 300
+        ? rawBody.substring(0, 300) + '...'
+        : rawBody;
+    print('Body preview: "$preview"');
+    print('====================================================');
+
+    try {
+      final decoded = json.decode(rawBody); // ← 실패하면 catch로 감
+
+      if (decoded is Map<String, dynamic>) {
+        return ResponseDto(
+          decoded['statusCode'] as int? ?? response.statusCode,
+          decoded['success'] as bool? ??
+              (response.statusCode >= 200 && response.statusCode < 300),
+          decoded['data'],
+          decoded['error'],
+          decoded['message'],
+        );
+      } else {
+        // Map이 아니더라도 최소한 죽진 않게
+        final success = response.statusCode >= 200 && response.statusCode < 300;
+        return ResponseDto(response.statusCode, success, decoded, null, null);
+      }
+    } catch (e, stack) {
+      // 🔥 바로 여기서 "누가 빈값 줬는지" 확인 가능
+      print('******** JSON DECODE ERROR ********');
+      print('Method: ${response.request?.method}');
+      print('URL: ${response.request?.url}');
+      print('Status: ${response.statusCode}');
+      print('Body length: ${rawBody.length}');
+      print('Body raw: "$rawBody"');
+      print('Error: $e');
+      print('Stack: $stack');
+      print('***********************************');
+
+      // 원래처럼 터뜨리고 싶으면 rethrow
+      rethrow;
+      // 아니면 여기서도 방어적으로 ResponseDto를 만들어 돌려줄 수도 있음
+    }
   }
 
   static Future<bool> _refreshToken() async {
@@ -169,9 +208,12 @@ class ApiService {
     String url, {
     Map<String, String>? headers,
   }) async {
+    final fullUrl = '$_baseUrl$url';
+    print('[API REQUEST] GET $fullUrl');
+
     return _request(() async {
       return await http.get(
-        Uri.parse('$_baseUrl$url'),
+        Uri.parse(fullUrl),
         headers: await _getHeaders(headers),
       );
     });
@@ -182,9 +224,13 @@ class ApiService {
     Object? body,
     Map<String, String>? headers,
   }) async {
+    final fullUrl = '$_baseUrl$url';
+    print('[API REQUEST] POST $fullUrl');
+    print('[API REQUEST BODY] $body');
+
     return _request(() async {
       return await http.post(
-        Uri.parse('$_baseUrl$url'),
+        Uri.parse(fullUrl),
         headers: await _getHeaders(headers),
         body: _getBody(body),
       );
@@ -196,9 +242,13 @@ class ApiService {
     Object? body,
     Map<String, String>? headers,
   }) async {
+    final fullUrl = '$_baseUrl$url';
+    print('[API REQUEST] PUT $fullUrl');
+    print('[API REQUEST BODY] $body');
+
     return _request(() async {
       return await http.put(
-        Uri.parse('$_baseUrl$url'),
+        Uri.parse(fullUrl),
         headers: await _getHeaders(headers),
         body: _getBody(body),
       );
@@ -210,9 +260,13 @@ class ApiService {
     Object? body,
     Map<String, String>? headers,
   }) async {
+    final fullUrl = '$_baseUrl$url';
+    print('[API REQUEST] PATCH $fullUrl');
+    print('[API REQUEST BODY] $body');
+
     return _request(() async {
       return await http.patch(
-        Uri.parse('$_baseUrl$url'),
+        Uri.parse(fullUrl),
         headers: await _getHeaders(headers),
         body: _getBody(body),
       );
@@ -224,9 +278,13 @@ class ApiService {
     Object? body,
     Map<String, String>? headers,
   }) async {
+    final fullUrl = '$_baseUrl$url';
+    print('[API REQUEST] DELETE $fullUrl');
+    print('[API REQUEST BODY] $body');
+
     return _request(() async {
       return await http.delete(
-        Uri.parse('$_baseUrl$url'),
+        Uri.parse(fullUrl),
         headers: await _getHeaders(headers),
         body: _getBody(body),
       );
