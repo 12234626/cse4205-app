@@ -95,7 +95,9 @@ class _SettingsPageState extends State<SettingsPage> {
         return AlertDialog(
           title: const Text('회원 탈퇴'),
           content: const Text(
-            '정말로 탈퇴하시겠습니까?\n모든 데이터가 삭제되며 복구할 수 없고, 재가입이 불가합니다.',
+            '정말로 탈퇴하시겠습니까?\n\n'
+            '⚠️ 모든 데이터가 삭제되며 복구할 수 없습니다.\n'
+            '⚠️ 탈퇴 후 재가입은 불가합니다.',
           ),
           actions: [
             TextButton(
