@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../common/constants.dart';
 import '../../models/guideline_post_model.dart';
-import 'guideline_write_page.dart';
+import '../../services/api_service.dart';
 import 'guideline_detail_page.dart';
-import 'dart:io';
 
 class GuidelinesPage extends StatefulWidget {
   const GuidelinesPage({super.key});
@@ -24,21 +23,65 @@ class _GuidelinesPageState extends State<GuidelinesPage> {
 
   Future<void> _loadPosts() async {
     setState(() => _isLoading = true);
-    // TODO: API 연동 필요
-    setState(() {
-      _posts = [];
-      _isLoading = false;
-    });
-  }
 
-  Future<void> _navigateToWritePage() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const GuidelineWritePage()),
-    );
+    try {
+      final response = await ApiService.get('/api/quest');
 
-    if (result == true) {
-      _loadPosts(); // 게시글 목록 새로고침
+      debugPrint(
+        '[가이드라인] API 응답: success=${response.success}, data=${response.data}',
+      );
+
+      if (response.success && response.data != null) {
+        final List<GuidelinePost> posts = [];
+        final questList = response.data as List;
+
+        debugPrint('[가이드라인] 전체 퀘스트 개수: ${questList.length}');
+
+        for (var questData in questList) {
+          debugPrint(
+            '[가이드라인] 퀘스트 확인: category=${questData['category']}, questType=${questData['questType']}, title=${questData['title']}',
+          );
+
+          // category가 "GUIDELINE"이고 questType이 "NORMAL"인 퀸스트만 필터링
+          if (questData['category'] == 'GUIDELINE' &&
+              questData['questType'] == 'NORMAL') {
+            debugPrint('[가이드라인] ✅ 필터 통과: ${questData['title']}');
+            try {
+              posts.add(GuidelinePost.fromJson(questData));
+            } catch (e) {
+              debugPrint('가이드라인 파싱 오류: $e');
+            }
+          }
+        }
+
+        debugPrint('[가이드라인] 필터링 후 개수: ${posts.length}');
+
+        // questId 기준 오름차순 정렬
+        posts.sort((a, b) => a.questId.compareTo(b.questId));
+
+        setState(() {
+          _posts = posts;
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                response.message?.toString() ?? '가이드라인을 불러오지 못했습니다.',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: ${e.toString()}')));
+      }
     }
   }
 
@@ -88,136 +131,102 @@ class _GuidelinesPageState extends State<GuidelinesPage> {
           decoration: const BoxDecoration(gradient: AppColors.appBarGradient),
         ),
         title: const Text('가이드라인 모음'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: _navigateToWritePage,
-            tooltip: '글쓰기',
-          ),
-        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _posts.isEmpty
-          ? const Center(child: Text('게시글이 없습니다.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: _posts.length,
-              itemBuilder: (context, index) {
-                final post = _posts[index];
-                return _buildGuidelineCard(context, post: post);
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToWritePage,
-        backgroundColor: AppColors.primary,
-        tooltip: '글쓰기',
-        child: const Icon(Icons.edit),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadPosts,
+                child: _posts.isEmpty
+                    ? const Center(
+                        child: Text(
+                          '아직 가이드라인이 없습니다.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _posts.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final post = _posts[index];
+                          return _buildPostCard(post);
+                        },
+                      ),
+              ),
       ),
     );
   }
 
-  Widget _buildGuidelineCard(
-    BuildContext context, {
-    required GuidelinePost post,
-  }) {
-    final String displayTitle = '[${post.category}] ${post.title}';
-
+  Widget _buildPostCard(GuidelinePost post) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.only(bottom: 16.0),
       child: InkWell(
-        onTap: () async {
-          // 게시글 상세보기
-          final result = await Navigator.push(
+        onTap: () {
+          Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => GuidelineDetailPage(post: post),
             ),
           );
-
-          // 게시글이 수정되거나 삭제된 경우 목록 새로고침
-          if (result == true) {
-            _loadPosts();
-          }
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayTitle,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _getPreviewText(post.content),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      post.date,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                    ),
-                  ],
+              // 제목
+              Text(
+                post.title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              if (post.imageUrl != null) ...[
-                const SizedBox(width: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: _buildThumbnail(post.imageUrl!),
-                ),
-              ],
+              const SizedBox(height: 8),
+
+              // 내용 미리보기
+              Text(
+                _getPreviewText(post.description),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+
+              // 난이도 및 보상 정보
+              Row(
+                children: [
+                  Icon(Icons.star, size: 16, color: Colors.amber),
+                  const SizedBox(width: 4),
+                  Text(
+                    post.difficulty,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(Icons.emoji_events, size: 16, color: Colors.orange),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${post.expReward} EXP',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(Icons.military_tech, size: 16, color: Colors.blue),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Lv.${post.levelRequired}+',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildThumbnail(String imageUrl) {
-    // 로컬 파일인지 URL인지 확인
-    if (imageUrl.startsWith('http')) {
-      return Image.network(
-        imageUrl,
-        width: 80,
-        height: 80,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: 80,
-            height: 80,
-            color: Colors.grey[300],
-            child: const Icon(Icons.image, color: Colors.grey),
-          );
-        },
-      );
-    } else {
-      return Image.file(
-        File(imageUrl),
-        width: 80,
-        height: 80,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: 80,
-            height: 80,
-            color: Colors.grey[300],
-            child: const Icon(Icons.image, color: Colors.grey),
-          );
-        },
-      );
-    }
   }
 }
