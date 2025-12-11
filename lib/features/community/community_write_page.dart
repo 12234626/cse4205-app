@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import '../../common/constants.dart';
 import '../../services/api_service.dart';
 
@@ -16,6 +19,8 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   bool _showPreview = false;
+  final List<XFile> _selectedImages = []; // 선택된 이미지 파일 목록 (로컬)
+  bool _isSubmitting = false; // 게시글 등록 중 상태
 
   bool get _hasContent {
     return _titleController.text.isNotEmpty ||
@@ -27,6 +32,83 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1920,
+      maxHeight: 1920,
+      imageQuality: 85,
+    );
+
+    if (pickedFile == null) return;
+
+    setState(() {
+      _selectedImages.add(pickedFile);
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이미지가 추가되었습니다.')));
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
+  }
+
+  Future<List<String>> _uploadImagesToS3() async {
+    final List<String> uploadedUrls = [];
+
+    for (final imageFile in _selectedImages) {
+      try {
+        // 1단계: Presigned URL 받기
+        final fileName = imageFile.name;
+        final contentType = 'image/${imageFile.path.split('.').last}';
+
+        final presignedResponse = await ApiService.post(
+          '/api/upload/presigned-url',
+          body: {
+            'fileName': fileName,
+            'contentType': contentType,
+            'folder': 'community',
+          },
+        );
+
+        if (!presignedResponse.success || presignedResponse.data == null) {
+          throw Exception('Presigned URL 생성 실패');
+        }
+
+        final uploadUrl = presignedResponse.data['uploadUrl'];
+        final fileUrl = presignedResponse.data['fileUrl'];
+
+        // 2단계: S3에 이미지 업로드
+        final file = File(imageFile.path);
+        final bytes = await file.readAsBytes();
+
+        final uploadResponse = await http.put(
+          Uri.parse(uploadUrl),
+          headers: {'Content-Type': contentType},
+          body: bytes,
+        );
+
+        if (uploadResponse.statusCode != 200) {
+          throw Exception('이미지 업로드 실패');
+        }
+
+        uploadedUrls.add(fileUrl);
+      } catch (e) {
+        print('[DEBUG] 이미지 업로드 오류: $e');
+        rethrow;
+      }
+    }
+
+    return uploadedUrls;
   }
 
   void _applyMarkdown(String prefix, {String? suffix, bool perLine = false}) {
@@ -166,11 +248,23 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
       return;
     }
 
+    setState(() => _isSubmitting = true);
+
     print('[DEBUG] 게시글 작성 시작 - userQuestId: ${widget.userQuestId}');
     print('[DEBUG] 제목: ${_titleController.text}');
     print('[DEBUG] 내용: ${_contentController.text}');
+    print('[DEBUG] 이미지 개수: ${_selectedImages.length}');
 
     try {
+      // 1단계: 이미지가 있으면 S3에 업로드
+      List<String> uploadedImageUrls = [];
+      if (_selectedImages.isNotEmpty) {
+        print('[DEBUG] 이미지 업로드 시작...');
+        uploadedImageUrls = await _uploadImagesToS3();
+        print('[DEBUG] 이미지 업로드 완료: $uploadedImageUrls');
+      }
+
+      // 2단계: 게시글 작성
       final response = await ApiService.post(
         '/api/consent-request/COMMUNITY/${widget.userQuestId}',
         body: {
@@ -185,6 +279,24 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
       print('[DEBUG] API 응답 - error: ${response.error}');
       print('[DEBUG] API 응답 - message: ${response.message}');
 
+      // 3단계: 이미지가 있으면 DB에 저장
+      if (response.success && uploadedImageUrls.isNotEmpty) {
+        final consentRequestId = response.data['consentRequestId'];
+        print('[DEBUG] 이미지 DB 저장 시작 - consentRequestId: $consentRequestId');
+
+        for (final imageUrl in uploadedImageUrls) {
+          await ApiService.post(
+            '/api/upload/save-file',
+            body: {
+              'fileUrl': imageUrl,
+              'fileType': 'CONSENT_IMAGE',
+              'consentRequestId': consentRequestId,
+            },
+          );
+        }
+        print('[DEBUG] 이미지 DB 저장 완료');
+      }
+
       if (mounted) {
         if (response.success) {
           ScaffoldMessenger.of(
@@ -192,9 +304,7 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
           ).showSnackBar(const SnackBar(content: Text('게시글이 작성되었습니다.')));
           Navigator.of(context).pop(true);
         } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 response.message?.toString() ??
@@ -211,6 +321,10 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: ${e.toString()}')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
       }
     }
   }
@@ -249,16 +363,28 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
                 });
               },
             ),
-            TextButton(
-              onPressed: _publishPost,
-              child: const Text(
-                '등록',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            _isSubmitting
+                ? const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                : TextButton(
+                    onPressed: _publishPost,
+                    child: const Text(
+                      '등록',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
           ],
         ),
         body: Column(
@@ -283,6 +409,65 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
             ),
 
             const Divider(height: 1),
+
+            // 이미지 미리보기
+            if (_selectedImages.isNotEmpty)
+              Container(
+                height: 120,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _selectedImages.length,
+                  itemBuilder: (context, index) {
+                    return Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              File(_selectedImages[index].path),
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: 100,
+                                  height: 100,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.error),
+                                );
+                              },
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: () => _removeImage(index),
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
 
             // 내용 입력 또는 미리보기
             Expanded(
@@ -317,15 +502,10 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
             // 하단 바 (Markdown 도구 모음)
             if (!_showPreview)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
-                  border: Border(
-                    top: BorderSide(color: Colors.grey[300]!),
-                  ),
+                  border: Border(top: BorderSide(color: Colors.grey[300]!)),
                 ),
                 child: Row(
                   children: [
@@ -358,6 +538,14 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
                       icon: const Icon(Icons.format_list_bulleted),
                       tooltip: '리스트',
                       onPressed: () => _applyMarkdown('- ', perLine: true),
+                    ),
+                    const Spacer(),
+                    // 이미지 추가
+                    IconButton(
+                      icon: const Icon(Icons.image),
+                      tooltip: '이미지 추가',
+                      onPressed: _pickImage,
+                      color: AppColors.primary,
                     ),
                   ],
                 ),
