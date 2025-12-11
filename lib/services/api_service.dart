@@ -71,80 +71,28 @@ class ApiService {
   }
 
   static ResponseDto _formatResponse(http.Response response) {
-    final rawBody = response.body;
-
-    // 🔎 무조건 찍는 공통 로그 (나중에 필요 없으면 지워도 됨)
-    print('================ [API RAW RESPONSE] ================');
-    print('Method: ${response.request?.method}');
-    print('URL: ${response.request?.url}');
-    print('Status: ${response.statusCode}');
-    print('Body length: ${rawBody.length}');
-    // 너무 길면 앞 300자만 잘라서
-    final preview = rawBody.length > 300
-        ? rawBody.substring(0, 300) + '...'
-        : rawBody;
-    print('Body preview: "$preview"');
-    print('====================================================');
-
-    try {
-      final decoded = json.decode(rawBody); // ← 실패하면 catch로 감
-
-      if (decoded is Map<String, dynamic>) {
-        return ResponseDto(
-          decoded['statusCode'] as int? ?? response.statusCode,
-          decoded['success'] as bool? ??
-              (response.statusCode >= 200 && response.statusCode < 300),
-          decoded['data'],
-          decoded['error'],
-          decoded['message'],
-        );
-      } else {
-        // Map이 아니더라도 최소한 죽진 않게
-        final success = response.statusCode >= 200 && response.statusCode < 300;
-        return ResponseDto(response.statusCode, success, decoded, null, null);
-      }
-    } catch (e, stack) {
-      // 🔥 바로 여기서 "누가 빈값 줬는지" 확인 가능
-      print('******** JSON DECODE ERROR ********');
-      print('Method: ${response.request?.method}');
-      print('URL: ${response.request?.url}');
-      print('Status: ${response.statusCode}');
-      print('Body length: ${rawBody.length}');
-      print('Body raw: "$rawBody"');
-      print('Error: $e');
-      print('Stack: $stack');
-      print('***********************************');
-
-      // 원래처럼 터뜨리고 싶으면 rethrow
-      rethrow;
-      // 아니면 여기서도 방어적으로 ResponseDto를 만들어 돌려줄 수도 있음
+    if (response.statusCode == 204) {
+      return ResponseDto(204, true, null, null, null);
     }
-  }
 
-  static Future<bool> _refreshToken() async {
     try {
-      final refreshToken = await _getToken('refresh');
+      final body = json.decode(response.body) as Map<String, dynamic>;
 
-      if (refreshToken == null) return false;
-
-      final response = await http.post(
-        Uri.parse('$_baseUrl/api/auth/refresh'),
-        headers: await _getHeaders({}, 'refresh'),
+      return ResponseDto(
+        body['statusCode'] as int? ?? response.statusCode,
+        body['success'] as bool? ?? false,
+        body['data'],
+        body['error'],
+        body['message'],
       );
-      final body = _formatResponse(response);
-
-      if (body.success == true) {
-        final accessToken = body.data['accessToken'];
-        final refreshToken = body.data['refreshToken'];
-
-        await setToken(accessToken, refreshToken);
-
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      return false;
+    } catch (e) {
+      return ResponseDto(
+        response.statusCode,
+        false,
+        null,
+        'RESPONSE_BODY_PARSE_ERROR',
+        response.body,
+      );
     }
   }
 
