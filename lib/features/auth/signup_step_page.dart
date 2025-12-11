@@ -86,11 +86,21 @@ class _SignupStepPageState extends State<SignupStepPage> {
       return;
     }
 
-    // 닉네임 형식 검증 (한글, 영어, 숫자만)
-    final validPattern = RegExp(r'^[가-힣a-zA-Z0-9]+$');
+    // 닉네임 길이 검증 (4글자 이상 15글자 이하)
+    if (nickname.length < 4 || nickname.length > 15) {
+      setState(() {
+        _nicknameErrorMessage = '닉네임은 4글자 이상 15글자 이하여야 합니다.';
+        _isNicknameChecked = false;
+        _isNicknameAvailable = false;
+      });
+      return;
+    }
+
+    // 닉네임 형식 검증 (영어, 숫자만)
+    final validPattern = RegExp(r'^[a-zA-Z0-9]+$');
     if (!validPattern.hasMatch(nickname)) {
       setState(() {
-        _nicknameErrorMessage = '닉네임은 한글, 영어, 숫자만 사용할 수 있습니다.';
+        _nicknameErrorMessage = '닉네임은 영어, 숫자만 사용할 수 있습니다.';
         _isNicknameChecked = false;
         _isNicknameAvailable = false;
       });
@@ -396,8 +406,17 @@ class _SignupStepPageState extends State<SignupStepPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            '한글, 영어, 숫자만 사용할 수 있습니다',
+            '영어, 숫자만 사용할 수 있습니다 (4~15글자)',
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '닉네임은 바꾸지 못하니 신중하게 입력해주세요',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.red[700],
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 32),
           TextField(
@@ -416,9 +435,6 @@ class _SignupStepPageState extends State<SignupStepPage> {
                   ? Icon(Icons.check_circle, color: AppColors.primary)
                   : null,
             ),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[가-힣a-zA-Z0-9]')),
-            ],
             onChanged: (value) {
               setState(() {
                 _isNicknameChecked = false;
@@ -572,9 +588,6 @@ class _SignupStepPageState extends State<SignupStepPage> {
                   ? Icon(Icons.check_circle, color: AppColors.primary)
                   : null,
             ),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[가-힣a-zA-Z0-9]')),
-            ],
             onChanged: (value) {
               // 입력 시 에러 메시지와 검증 상태 초기화
               setState(() {
