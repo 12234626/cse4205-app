@@ -48,10 +48,10 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
           if (response.success && response.data != null) {
             presignedUrls.add(response.data['url']);
           } else {
-            print('[DEBUG] Presigned URL 생성 실패: $imageUrl');
+            debugPrint('[DEBUG] Presigned URL 생성 실패: $imageUrl');
           }
         } catch (e) {
-          print('[DEBUG] Presigned URL 생성 오류: $e');
+          debugPrint('[DEBUG] Presigned URL 생성 오류: $e');
         }
       }
 
@@ -62,7 +62,7 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
         });
       }
     } catch (e) {
-      print('[DEBUG] 이미지 로드 오류: $e');
+      debugPrint('[DEBUG] 이미지 로드 오류: $e');
       if (mounted) {
         setState(() => _isLoadingImages = false);
       }
@@ -199,7 +199,7 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
                               fit: BoxFit.cover,
                               width: double.infinity,
                               errorBuilder: (context, error, stackTrace) {
-                                print('[DEBUG] 이미지 로드 실패: $imageUrl');
+                                debugPrint('[DEBUG] 이미지 로드 실패: $imageUrl');
                                 return Container(
                                   height: 200,
                                   decoration: BoxDecoration(

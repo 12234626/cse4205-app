@@ -333,8 +333,9 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
                                       ),
                                   loadingBuilder:
                                       (context, child, loadingProgress) {
-                                        if (loadingProgress == null)
+                                        if (loadingProgress == null) {
                                           return child;
+                                        }
                                         return Container(
                                           height: 200,
                                           color: Colors.grey[200],

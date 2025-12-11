@@ -103,7 +103,7 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
 
         uploadedUrls.add(fileUrl);
       } catch (e) {
-        print('[DEBUG] 이미지 업로드 오류: $e');
+        debugPrint('[DEBUG] 이미지 업로드 오류: $e');
         rethrow;
       }
     }
@@ -250,18 +250,18 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
 
     setState(() => _isSubmitting = true);
 
-    print('[DEBUG] 게시글 작성 시작 - userQuestId: ${widget.userQuestId}');
-    print('[DEBUG] 제목: ${_titleController.text}');
-    print('[DEBUG] 내용: ${_contentController.text}');
-    print('[DEBUG] 이미지 개수: ${_selectedImages.length}');
+    debugPrint('[DEBUG] 게시글 작성 시작 - userQuestId: ${widget.userQuestId}');
+    debugPrint('[DEBUG] 제목: ${_titleController.text}');
+    debugPrint('[DEBUG] 내용: ${_contentController.text}');
+    debugPrint('[DEBUG] 이미지 개수: ${_selectedImages.length}');
 
     try {
       // 1단계: 이미지가 있으면 S3에 업로드
       List<String> uploadedImageUrls = [];
       if (_selectedImages.isNotEmpty) {
-        print('[DEBUG] 이미지 업로드 시작...');
+        debugPrint('[DEBUG] 이미지 업로드 시작...');
         uploadedImageUrls = await _uploadImagesToS3();
-        print('[DEBUG] 이미지 업로드 완료: $uploadedImageUrls');
+        debugPrint('[DEBUG] 이미지 업로드 완료: $uploadedImageUrls');
       }
 
       // 2단계: 게시글 작성
@@ -273,16 +273,18 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
         },
       );
 
-      print('[DEBUG] API 응답 - success: ${response.success}');
-      print('[DEBUG] API 응답 - statusCode: ${response.statusCode}');
-      print('[DEBUG] API 응답 - data: ${response.data}');
-      print('[DEBUG] API 응답 - error: ${response.error}');
-      print('[DEBUG] API 응답 - message: ${response.message}');
+      debugPrint('[DEBUG] API 응답 - success: ${response.success}');
+      debugPrint('[DEBUG] API 응답 - statusCode: ${response.statusCode}');
+      debugPrint('[DEBUG] API 응답 - data: ${response.data}');
+      debugPrint('[DEBUG] API 응답 - error: ${response.error}');
+      debugPrint('[DEBUG] API 응답 - message: ${response.message}');
 
       // 3단계: 이미지가 있으면 DB에 저장
       if (response.success && uploadedImageUrls.isNotEmpty) {
         final consentRequestId = response.data['consentRequestId'];
-        print('[DEBUG] 이미지 DB 저장 시작 - consentRequestId: $consentRequestId');
+        debugPrint(
+          '[DEBUG] 이미지 DB 저장 시작 - consentRequestId: $consentRequestId',
+        );
 
         for (final imageUrl in uploadedImageUrls) {
           await ApiService.post(
@@ -294,7 +296,7 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
             },
           );
         }
-        print('[DEBUG] 이미지 DB 저장 완료');
+        debugPrint('[DEBUG] 이미지 DB 저장 완료');
       }
 
       if (mounted) {
@@ -316,7 +318,7 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
         }
       }
     } catch (e) {
-      print('[DEBUG] 예외 발생: $e');
+      debugPrint('[DEBUG] 예외 발생: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
