@@ -11,8 +11,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _dailyQuestNotification = true;
-  bool _weeklyQuestNotification = false;
+  // 알림 관련 변수 제거
   String _username = '사용자';
   bool _isLoading = true;
 
@@ -188,21 +187,16 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: const EdgeInsets.all(20.0),
               child: Row(
                 children: [
-                  // 프로필 사진
+                  // 프로필 사진 (디폴트 아이콘)
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.grey[300]!, width: 2),
                     ),
-                    child: CircleAvatar(
+                    child: const CircleAvatar(
                       radius: 40,
-                      backgroundImage: const NetworkImage(
-                        'https://plus.unsplash.com/premium_photo-1686750875748-d00684d36b1e?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-                      ),
-                      onBackgroundImageError: (exception, stackTrace) {
-                        // 이미지 로드 실패 처리
-                      },
-                      child: Container(),
+                      backgroundColor: Colors.blue,
+                      child: Icon(Icons.person, size: 40, color: Colors.white),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -228,88 +222,10 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
 
-            // 개인정보 수정 버튼
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: InkWell(
-                  onTap: () {
-                    // 개인정보 수정 페이지로 이동
-                  },
-                  child: const Text(
-                    '계정 정보 수정',
-                    style: TextStyle(
-                      fontSize: 16,
-                      decoration: TextDecoration.underline,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ),
-              ),
-            ),
 
             const SizedBox(height: 24),
             const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
             const SizedBox(height: 8),
-
-            // 알림 설정 섹션
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 12.0,
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.notifications_outlined, color: Colors.grey[700]),
-                  const SizedBox(width: 12),
-                  const Text(
-                    '알림',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-
-            // 일일퀘스트 알림
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('일일퀘스트 알림', style: TextStyle(fontSize: 16)),
-                  Switch(
-                    value: _dailyQuestNotification,
-                    onChanged: (value) {
-                      setState(() {
-                        _dailyQuestNotification = value;
-                      });
-                    },
-                    activeTrackColor: AppColors.primary,
-                  ),
-                ],
-              ),
-            ),
-
-            // 주간퀘스트 알림
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('주간퀘스트 알림', style: TextStyle(fontSize: 16)),
-                  Switch(
-                    value: _weeklyQuestNotification,
-                    onChanged: (value) {
-                      setState(() {
-                        _weeklyQuestNotification = value;
-                      });
-                    },
-                    activeTrackColor: AppColors.primary,
-                  ),
-                ],
-              ),
-            ),
 
             const SizedBox(height: 24),
             const Divider(thickness: 1),
