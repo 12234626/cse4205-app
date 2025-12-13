@@ -83,20 +83,23 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     setState(() => _isLoadingQuests = true);
 
     try {
-      final response = await ApiService.post('/api/user-quest/daily/assign');
+      // 서버에서 매일 06시에 자동으로 퀘스트 할당, 클라이언트는 조회만
+      final response = await ApiService.get('/api/user-quest/daily/today');
 
       if (response.success && response.data != null) {
         // 커뮤니티 게시글 목록 가져오기
-        final postsResponse = await ApiService.get('/api/consent-request/community');
+        final postsResponse = await ApiService.get(
+          '/api/consent-request/community',
+        );
         final List<int> postedUserQuestIds = [];
-        
+
         if (postsResponse.success && postsResponse.data != null) {
           postedUserQuestIds.addAll(
             (postsResponse.data as List)
                 .map((post) => post['userQuestId'] as int?)
                 .where((id) => id != null)
                 .cast<int>()
-                .toList()
+                .toList(),
           );
         }
 
@@ -302,7 +305,8 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
             );
             if (questIndex != -1) {
               _dailyQuests[questIndex]['status'] = 'CONSENTED';
-              _dailyQuests[questIndex]['completedAt'] = DateTime.now().toIso8601String();
+              _dailyQuests[questIndex]['completedAt'] = DateTime.now()
+                  .toIso8601String();
             }
           });
 
@@ -313,10 +317,10 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               backgroundColor: Colors.green,
             ),
           );
-          
+
           // 프로필 정보 새로고침 (경험치 업데이트)
           _loadUserProfile();
-          
+
           // 약간의 지연 후 퀘스트 목록도 새로고침
           Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted) {
@@ -328,9 +332,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                response.message?.toString() ?? '출석 처리에 실패했습니다.',
-              ),
+              content: Text(response.message?.toString() ?? '출석 처리에 실패했습니다.'),
               backgroundColor: Colors.red,
             ),
           );
@@ -347,7 +349,8 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
             );
             if (questIndex != -1) {
               _dailyQuests[questIndex]['status'] = 'CONSENTED';
-              _dailyQuests[questIndex]['completedAt'] = DateTime.now().toIso8601String();
+              _dailyQuests[questIndex]['completedAt'] = DateTime.now()
+                  .toIso8601String();
             }
           });
 
@@ -358,10 +361,10 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               backgroundColor: Colors.green,
             ),
           );
-          
+
           // 프로필 정보 새로고침
           _loadUserProfile();
-          
+
           // 약간의 지연 후 퀘스트 목록도 새로고침
           Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted) {
@@ -945,8 +948,8 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                 isCompleted
                     ? _buildCompletedButton()
                     : isPending
-                        ? _buildPendingButton(userQuestId)
-                        : AnimatedSwitcher(
+                    ? _buildPendingButton(userQuestId)
+                    : AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         transitionBuilder:
                             (Widget child, Animation<double> animation) {
@@ -1064,10 +1067,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
       children: [
         // 메인 완료 버튼
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.amber[700],
             borderRadius: BorderRadius.circular(20),
@@ -1082,11 +1082,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.check_circle,
-                color: Colors.white,
-                size: 18,
-              ),
+              Icon(Icons.check_circle, color: Colors.white, size: 18),
               const SizedBox(width: 4),
               const Text(
                 '완료',
@@ -1102,29 +1098,17 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
         Positioned(
           top: -4,
           right: -4,
-          child: Icon(
-            Icons.auto_awesome,
-            color: Colors.yellow[300],
-            size: 16,
-          ),
+          child: Icon(Icons.auto_awesome, color: Colors.yellow[300], size: 16),
         ),
         Positioned(
           top: -2,
           left: -2,
-          child: Icon(
-            Icons.star,
-            color: Colors.amber[300],
-            size: 12,
-          ),
+          child: Icon(Icons.star, color: Colors.amber[300], size: 12),
         ),
         Positioned(
           bottom: -2,
           right: 8,
-          child: Icon(
-            Icons.star,
-            color: Colors.orange[300],
-            size: 10,
-          ),
+          child: Icon(Icons.star, color: Colors.orange[300], size: 10),
         ),
       ],
     );
@@ -1151,22 +1135,13 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
         elevation: 4,
         backgroundColor: Colors.orange[100],
         foregroundColor: Colors.orange[800],
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.schedule,
-            size: 18,
-            color: Colors.orange[800],
-          ),
+          Icon(Icons.schedule, size: 18, color: Colors.orange[800]),
           const SizedBox(width: 4),
           Text(
             '인증 대기 중',
