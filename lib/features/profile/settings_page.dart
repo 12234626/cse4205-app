@@ -178,75 +178,82 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         title: const Text('설정'),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 프로필 정보 섹션
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Row(
-                children: [
-                  // 프로필 사진 (디폴트 아이콘)
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey[300]!, width: 2),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 프로필 정보 섹션
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  children: [
+                    // 프로필 사진 (디폴트 아이콘)
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.grey[300]!, width: 2),
+                      ),
+                      child: const CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Colors.blue,
+                        child: Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                    child: const CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Colors.blue,
-                      child: Icon(Icons.person, size: 40, color: Colors.white),
+                    const SizedBox(width: 16),
+                    // 유저 닉네임
+                    Expanded(
+                      child: _isLoading
+                          ? const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              _username,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  // 유저 닉네임
-                  Expanded(
-                    child: _isLoading
-                        ? const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          )
-                        : Text(
-                            _username,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
+              const SizedBox(height: 24),
+              const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
+              const SizedBox(height: 8),
 
-            const SizedBox(height: 24),
-            const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
-            const SizedBox(height: 8),
+              const SizedBox(height: 24),
+              const Divider(thickness: 1),
 
-            const SizedBox(height: 24),
-            const Divider(thickness: 1),
-
-            // 로그아웃 버튼
-            ListTile(
-              leading: Icon(Icons.logout, color: Colors.grey[700]),
-              title: const Text('로그아웃', style: TextStyle(fontSize: 16)),
-              onTap: _showLogoutDialog,
-            ),
-
-            // 회원 탈퇴 버튼
-            ListTile(
-              leading: const Icon(Icons.person_remove, color: Colors.red),
-              title: const Text(
-                '회원 탈퇴',
-                style: TextStyle(fontSize: 16, color: Colors.red),
+              // 로그아웃 버튼
+              ListTile(
+                leading: Icon(Icons.logout, color: Colors.grey[700]),
+                title: const Text('로그아웃', style: TextStyle(fontSize: 16)),
+                onTap: _showLogoutDialog,
               ),
-              onTap: _deleteAccount,
-            ),
-          ],
+
+              // 회원 탈퇴 버튼
+              ListTile(
+                leading: const Icon(Icons.person_remove, color: Colors.red),
+                title: const Text(
+                  '회원 탈퇴',
+                  style: TextStyle(fontSize: 16, color: Colors.red),
+                ),
+                onTap: _deleteAccount,
+              ),
+            ],
+          ),
         ),
       ),
     );
