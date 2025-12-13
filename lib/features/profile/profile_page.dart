@@ -221,30 +221,32 @@ class _ProfilePageState extends State<ProfilePage>
         ),
         title: const Text('프로필'),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // 식물 + 땅 영역
-            _buildPlantSection(),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // 식물 + 땅 영역
+              _buildPlantSection(),
 
-            // 프로필 정보 영역
-            _buildProfileInfoSection(),
+              // 프로필 정보 영역
+              _buildProfileInfoSection(),
 
-            // 경험치 바
-            _buildExpBar(),
+              // 경험치 바
+              _buildExpBar(),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // 일일 퀘스트 진행도
-            _buildDailyQuestProgress(),
+              // 일일 퀘스트 진행도
+              _buildDailyQuestProgress(),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // 테마 선택
-            _buildThemeSection(),
+              // 테마 선택
+              _buildThemeSection(),
 
-            const SizedBox(height: 40),
-          ],
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );

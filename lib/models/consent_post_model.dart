@@ -39,10 +39,7 @@ class ConsentImage {
   final int consentRequestImageId;
   final String imageUrl;
 
-  ConsentImage({
-    required this.consentRequestImageId,
-    required this.imageUrl,
-  });
+  ConsentImage({required this.consentRequestImageId, required this.imageUrl});
 
   factory ConsentImage.fromJson(Map<String, dynamic> json) {
     return ConsentImage(
@@ -144,6 +141,25 @@ class ConsentPost {
       contentText = rawContent.toString();
     }
 
+    // createdAt를 안전하게 문자열로 변환
+    final rawCreatedAt = json['createdAt'];
+    String createdAtStr = '';
+    if (rawCreatedAt is String) {
+      createdAtStr = rawCreatedAt;
+    } else if (rawCreatedAt is Map && rawCreatedAt.isNotEmpty) {
+      // ISO 8601 형식의 날짜 객체인 경우 처리
+      createdAtStr = DateTime.now().toIso8601String();
+    }
+
+    // updatedAt를 안전하게 문자열로 변환
+    final rawUpdatedAt = json['updatedAt'];
+    String updatedAtStr = '';
+    if (rawUpdatedAt is String) {
+      updatedAtStr = rawUpdatedAt;
+    } else if (rawUpdatedAt is Map && rawUpdatedAt.isNotEmpty) {
+      updatedAtStr = DateTime.now().toIso8601String();
+    }
+
     return ConsentPost(
       consentRequestId: json['consentRequestId'] is int
           ? json['consentRequestId'] as int
@@ -154,8 +170,8 @@ class ConsentPost {
       requestType: json['requestType']?.toString() ?? '',
       title: json['title']?.toString(),
       content: contentText,
-      createdAt: json['createdAt']?.toString() ?? '',
-      updatedAt: json['updatedAt']?.toString() ?? '',
+      createdAt: createdAtStr,
+      updatedAt: updatedAtStr,
       author: ConsentAuthor.fromJson(
         (json['author'] ?? const {}) as Map<String, dynamic>,
       ),
@@ -163,8 +179,9 @@ class ConsentPost {
           .map((img) => ConsentImage.fromJson(img as Map<String, dynamic>))
           .toList(),
       reviews: (json['reviews'] as List<dynamic>? ?? const [])
-          .map((review) =>
-              ConsentReview.fromJson(review as Map<String, dynamic>))
+          .map(
+            (review) => ConsentReview.fromJson(review as Map<String, dynamic>),
+          )
           .toList(),
     );
   }

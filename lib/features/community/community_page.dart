@@ -50,7 +50,7 @@ class _CommunityPageState extends State<CommunityPage> {
                 debugPrint('Invalid author data: $authorData');
                 continue;
               }
-              final author = authorData as Map<String, dynamic>;
+              final author = authorData;
 
               // reviews를 안전하게 추출하고 유효한 reviewer가 있는 것만 필터링
               final reviewsData = postData['reviews'];
@@ -299,31 +299,12 @@ class _CommunityPageState extends State<CommunityPage> {
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                   const Spacer(),
-                  Icon(Icons.visibility, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    post.views.toString(),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(width: 8),
                   Icon(Icons.thumb_up, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    post.likes.toString(),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(Icons.thumb_down, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    post.dislikes.toString(),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
                   const SizedBox(width: 8),
                   Icon(Icons.comment, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
-                    post.comments.toString(),
+                    post.likes.toString(),
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
