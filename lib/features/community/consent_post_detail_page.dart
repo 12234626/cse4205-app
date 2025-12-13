@@ -209,239 +209,242 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
         ),
         title: const Text('게시글 상세'),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: _loadPost,
-                      child: const Text('다시 시도'),
-                    ),
-                  ],
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _loadPost,
+                        child: const Text('다시 시도'),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            )
-          : _post == null
-          ? const Center(child: Text('게시글을 찾을 수 없습니다.'))
-          : Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 제목
-                        Text(
-                          _post!.title ?? '제목 없음',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+              )
+            : _post == null
+            ? const Center(child: Text('게시글을 찾을 수 없습니다.'))
+            : Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 제목
+                          Text(
+                            _post!.title ?? '제목 없음',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
+                          const SizedBox(height: 16),
 
-                        // 작성자 정보
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundColor: AppColors.primaryLight,
-                              child: Text(
-                                _post!.author.username[0].toUpperCase(),
-                                style: const TextStyle(
+                          // 작성자 정보
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: AppColors.primaryLight,
+                                child: Text(
+                                  _post!.author.username[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _post!.author.username,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    _post!.createdAt.length >= 10
+                                        ? _post!.createdAt.substring(0, 10)
+                                        : _post!.createdAt,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 32),
+
+                          // 내용 (Markdown 렌더링)
+                          if (_post!.content != null)
+                            MarkdownBody(
+                              data: _post!.content!,
+                              selectable: true,
+                              styleSheet: MarkdownStyleSheet(
+                                p: const TextStyle(fontSize: 16, height: 1.6),
+                                h1: const TextStyle(
+                                  fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _post!.author.username,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+
+                          // 이미지들 (Presigned URL)
+                          if (_isLoadingImages) ...[
+                            const SizedBox(height: 20),
+                            const Center(child: CircularProgressIndicator()),
+                          ] else if (_presignedImageUrls.isNotEmpty) ...[
+                            const SizedBox(height: 20),
+                            ..._presignedImageUrls.map(
+                              (imageUrl) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                              height: 200,
+                                              color: Colors.grey[300],
+                                              child: const Icon(Icons.error),
+                                            ),
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) {
+                                        return child;
+                                      }
+                                      return Container(
+                                        height: 200,
+                                        color: Colors.grey[200],
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            value:
+                                                loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
+                                                : null,
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
+                              ),
+                            ),
+                          ] else if (_post!.images.isNotEmpty) ...[
+                            const SizedBox(height: 20),
+                            ..._post!.images.map(
+                              (image) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    image.imageUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                              height: 200,
+                                              color: Colors.grey[300],
+                                              child: const Icon(Icons.error),
+                                            ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+
+                          const SizedBox(height: 24),
+
+                          // 커뮤니티 인증 상태 박스
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green[50],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.green[300]!,
+                                width: 2,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green[700],
+                                  size: 28,
+                                ),
+                                const SizedBox(width: 12),
                                 Text(
-                                  _post!.createdAt.length >= 10
-                                      ? _post!.createdAt.substring(0, 10)
-                                      : _post!.createdAt,
+                                  '커뮤니티 인증 ${_getCommunityReviewCount()} / 3',
                                   style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green[700],
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                        const Divider(height: 32),
-
-                        // 내용 (Markdown 렌더링)
-                        if (_post!.content != null)
-                          MarkdownBody(
-                            data: _post!.content!,
-                            selectable: true,
-                            styleSheet: MarkdownStyleSheet(
-                              p: const TextStyle(fontSize: 16, height: 1.6),
-                              h1: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
                           ),
 
-                        // 이미지들 (Presigned URL)
-                        if (_isLoadingImages) ...[
-                          const SizedBox(height: 20),
-                          const Center(child: CircularProgressIndicator()),
-                        ] else if (_presignedImageUrls.isNotEmpty) ...[
-                          const SizedBox(height: 20),
-                          ..._presignedImageUrls.map(
-                            (imageUrl) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  imageUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                        height: 200,
-                                        color: Colors.grey[300],
-                                        child: const Icon(Icons.error),
-                                      ),
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                        if (loadingProgress == null) {
-                                          return child;
-                                        }
-                                        return Container(
-                                          height: 200,
-                                          color: Colors.grey[200],
-                                          child: Center(
-                                            child: CircularProgressIndicator(
-                                              value:
-                                                  loadingProgress
-                                                          .expectedTotalBytes !=
-                                                      null
-                                                  ? loadingProgress
-                                                            .cumulativeBytesLoaded /
-                                                        loadingProgress
-                                                            .expectedTotalBytes!
-                                                  : null,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                ),
-                              ),
+                          const SizedBox(height: 32),
+
+                          // 댓글 섹션
+                          Text(
+                            '댓글 (${_post!.reviews.length})',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ] else if (_post!.images.isNotEmpty) ...[
-                          const SizedBox(height: 20),
-                          ..._post!.images.map(
-                            (image) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  image.imageUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                        height: 200,
-                                        color: Colors.grey[300],
-                                        child: const Icon(Icons.error),
-                                      ),
-                                ),
-                              ),
-                            ),
+                          const SizedBox(height: 16),
+
+                          // 댓글 목록
+                          ..._post!.reviews.map(
+                            (review) => _buildCommentCard(review),
                           ),
                         ],
-
-                        const SizedBox(height: 24),
-
-                        // 커뮤니티 인증 상태 박스
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.green[50],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.green[300]!,
-                              width: 2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                color: Colors.green[700],
-                                size: 28,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                '커뮤니티 인증 ${_getCommunityReviewCount()} / 3',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green[700],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 32),
-
-                        // 댓글 섹션
-                        Text(
-                          '댓글 (${_post!.reviews.length})',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // 댓글 목록
-                        ..._post!.reviews.map(
-                          (review) => _buildCommentCard(review),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
 
-                // 댓글 입력 영역
-                _buildCommentInput(),
-              ],
-            ),
+                  // 댓글 입력 영역
+                  _buildCommentInput(),
+                ],
+              ),
+      ),
     );
   }
 

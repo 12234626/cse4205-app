@@ -27,25 +27,25 @@ class _GuidelinesPageState extends State<GuidelinesPage> {
     try {
       final response = await ApiService.get('/api/quest');
 
-      debugPrint(
-        '[가이드라인] API 응답: success=${response.success}, data=${response.data}',
-      );
+      // debugPrint(
+      //   '[가이드라인] API 응답: success=${response.success}, data=${response.data}',
+      // );
 
       if (response.success && response.data != null) {
         final List<GuidelinePost> posts = [];
         final questList = response.data as List;
 
-        debugPrint('[가이드라인] 전체 퀘스트 개수: ${questList.length}');
+        // debugPrint('[가이드라인] 전체 퀘스트 개수: ${questList.length}');
 
         for (var questData in questList) {
-          debugPrint(
-            '[가이드라인] 퀘스트 확인: category=${questData['category']}, questType=${questData['questType']}, title=${questData['title']}',
-          );
+          // debugPrint(
+          //   '[가이드라인] 퀘스트 확인: category=${questData['category']}, questType=${questData['questType']}, title=${questData['title']}',
+          // );
 
           // category가 "GUIDELINE"이고 questType이 "NORMAL"인 퀸스트만 필터링
           if (questData['category'] == 'GUIDELINE' &&
               questData['questType'] == 'NORMAL') {
-            debugPrint('[가이드라인] ✅ 필터 통과: ${questData['title']}');
+            // debugPrint('[가이드라인] ✅ 필터 통과: ${questData['title']}');
             try {
               posts.add(GuidelinePost.fromJson(questData));
             } catch (e) {
@@ -54,7 +54,7 @@ class _GuidelinesPageState extends State<GuidelinesPage> {
           }
         }
 
-        debugPrint('[가이드라인] 필터링 후 개수: ${posts.length}');
+        // debugPrint('[가이드라인] 필터링 후 개수: ${posts.length}');
 
         // questId 기준 오름차순 정렬
         posts.sort((a, b) => a.questId.compareTo(b.questId));

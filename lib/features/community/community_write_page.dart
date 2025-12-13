@@ -389,170 +389,175 @@ class _CommunityWritePageState extends State<CommunityWritePage> {
                   ),
           ],
         ),
-        body: Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            // 제목 입력
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: _titleController,
-                enableIMEPersonalizedLearning: false,
-                onChanged: (_) => setState(() {}),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: const InputDecoration(
-                  hintText: '제목',
-                  border: InputBorder.none,
+        body: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              // 제목 입력
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextField(
+                  controller: _titleController,
+                  enableIMEPersonalizedLearning: false,
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: '제목',
+                    border: InputBorder.none,
+                  ),
                 ),
               ),
-            ),
 
-            const Divider(height: 1),
+              const Divider(height: 1),
 
-            // 이미지 미리보기
-            if (_selectedImages.isNotEmpty)
-              Container(
-                height: 120,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _selectedImages.length,
-                  itemBuilder: (context, index) {
-                    return Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              File(_selectedImages[index].path),
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  width: 100,
-                                  height: 100,
-                                  color: Colors.grey[300],
-                                  child: const Icon(Icons.error),
-                                );
-                              },
+              // 이미지 미리보기
+              if (_selectedImages.isNotEmpty)
+                Container(
+                  height: 120,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _selectedImages.length,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                File(_selectedImages[index].path),
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 100,
+                                    height: 100,
+                                    color: Colors.grey[300],
+                                    child: const Icon(Icons.error),
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: GestureDetector(
-                              onTap: () => _removeImage(index),
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                  size: 16,
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: GestureDetector(
+                                onTap: () => _removeImage(index),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
                                 ),
                               ),
                             ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+              // 내용 입력 또는 미리보기
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _showPreview
+                      ? SingleChildScrollView(
+                          child: Markdown(
+                            data: _contentController.text.isEmpty
+                                ? '내용을 입력하세요...'
+                                : _contentController.text,
+                            selectable: true,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
                           ),
-                        ],
-                      ),
-                    );
-                  },
+                        )
+                      : TextField(
+                          controller: _contentController,
+                          enableIMEPersonalizedLearning: false,
+                          onChanged: (_) => setState(() {}),
+                          maxLines: null,
+                          expands: true,
+                          textAlignVertical: TextAlignVertical.top,
+                          decoration: const InputDecoration(
+                            hintText: '내용을 입력하세요... (Markdown 문법 지원)',
+                            border: InputBorder.none,
+                          ),
+                        ),
                 ),
               ),
 
-            // 내용 입력 또는 미리보기
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: _showPreview
-                    ? SingleChildScrollView(
-                        child: Markdown(
-                          data: _contentController.text.isEmpty
-                              ? '내용을 입력하세요...'
-                              : _contentController.text,
-                          selectable: true,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                        ),
-                      )
-                    : TextField(
-                        controller: _contentController,
-                        enableIMEPersonalizedLearning: false,
-                        onChanged: (_) => setState(() {}),
-                        maxLines: null,
-                        expands: true,
-                        textAlignVertical: TextAlignVertical.top,
-                        decoration: const InputDecoration(
-                          hintText: '내용을 입력하세요... (Markdown 문법 지원)',
-                          border: InputBorder.none,
-                        ),
+              // 하단 바 (Markdown 도구 모음)
+              if (!_showPreview)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                  ),
+                  child: Row(
+                    children: [
+                      // 굵게
+                      IconButton(
+                        icon: const Icon(Icons.format_bold),
+                        tooltip: '굵게',
+                        onPressed: () => _applyMarkdown('**', suffix: '**'),
                       ),
-              ),
-            ),
-
-            // 하단 바 (Markdown 도구 모음)
-            if (!_showPreview)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                      // 기울이기
+                      IconButton(
+                        icon: const Icon(Icons.format_italic),
+                        tooltip: '기울이기',
+                        onPressed: () => _applyMarkdown('*', suffix: '*'),
+                      ),
+                      // 밑줄
+                      IconButton(
+                        icon: const Icon(Icons.format_underline),
+                        tooltip: '밑줄',
+                        onPressed: () => _applyMarkdown('<u>', suffix: '</u>'),
+                      ),
+                      // 제목
+                      IconButton(
+                        icon: const Icon(Icons.title, size: 28),
+                        tooltip: '제목',
+                        onPressed: _showHeadingMenu,
+                      ),
+                      // 리스트
+                      IconButton(
+                        icon: const Icon(Icons.format_list_bulleted),
+                        tooltip: '리스트',
+                        onPressed: () => _applyMarkdown('- ', perLine: true),
+                      ),
+                      const Spacer(),
+                      // 이미지 추가
+                      IconButton(
+                        icon: const Icon(Icons.image),
+                        tooltip: '이미지 추가',
+                        onPressed: _pickImage,
+                        color: AppColors.primary,
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    // 굵게
-                    IconButton(
-                      icon: const Icon(Icons.format_bold),
-                      tooltip: '굵게',
-                      onPressed: () => _applyMarkdown('**', suffix: '**'),
-                    ),
-                    // 기울이기
-                    IconButton(
-                      icon: const Icon(Icons.format_italic),
-                      tooltip: '기울이기',
-                      onPressed: () => _applyMarkdown('*', suffix: '*'),
-                    ),
-                    // 밑줄
-                    IconButton(
-                      icon: const Icon(Icons.format_underline),
-                      tooltip: '밑줄',
-                      onPressed: () => _applyMarkdown('<u>', suffix: '</u>'),
-                    ),
-                    // 제목
-                    IconButton(
-                      icon: const Icon(Icons.title, size: 28),
-                      tooltip: '제목',
-                      onPressed: _showHeadingMenu,
-                    ),
-                    // 리스트
-                    IconButton(
-                      icon: const Icon(Icons.format_list_bulleted),
-                      tooltip: '리스트',
-                      onPressed: () => _applyMarkdown('- ', perLine: true),
-                    ),
-                    const Spacer(),
-                    // 이미지 추가
-                    IconButton(
-                      icon: const Icon(Icons.image),
-                      tooltip: '이미지 추가',
-                      onPressed: _pickImage,
-                      color: AppColors.primary,
-                    ),
-                  ],
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
