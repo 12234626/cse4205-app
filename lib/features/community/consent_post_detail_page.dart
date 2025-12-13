@@ -42,6 +42,22 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
     super.dispose();
   }
 
+  Map<String, dynamic> _getTierInfo(int level) {
+    if (level <= 50) {
+      return {'name': '없음', 'color': Colors.grey};
+    } else if (level <= 100) {
+      return {'name': '브론즈', 'color': const Color(0xFFCD7F32)};
+    } else if (level <= 150) {
+      return {'name': '실버', 'color': const Color(0xFFC0C0C0)};
+    } else if (level <= 200) {
+      return {'name': '골드', 'color': const Color(0xFFFFD700)};
+    } else if (level <= 250) {
+      return {'name': '플래티넘', 'color': const Color(0xFF47F5BB)};
+    } else {
+      return {'name': '다이아', 'color': const Color(0xFFB9F2FF)};
+    }
+  }
+
   Future<void> _loadPresignedImages() async {
     if (_post == null || _post!.images.isEmpty) return;
 
@@ -262,13 +278,22 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
                           // 작성자 정보
                           Row(
                             children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor: AppColors.primaryLight,
-                                child: Text(
-                                  _post!.author.username[0].toUpperCase(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/profile',
+                                    arguments: _post!.author.username,
+                                  );
+                                },
+                                child: CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: AppColors.primaryLight,
+                                  child: Text(
+                                    _post!.author.username[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -458,12 +483,21 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AppColors.secondaryLight,
-                  child: Text(
-                    review.reviewer.username[0].toUpperCase(),
-                    style: const TextStyle(fontSize: 14),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/profile',
+                      arguments: review.reviewer.username,
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AppColors.secondaryLight,
+                    child: Text(
+                      review.reviewer.username[0].toUpperCase(),
+                      style: const TextStyle(fontSize: 14),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),

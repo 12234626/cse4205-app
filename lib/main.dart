@@ -11,6 +11,7 @@ import 'features/profile/profile_page.dart';
 import 'features/guide/guidelines.dart';
 import 'features/profile/settings_page.dart';
 import 'common/constants.dart';
+import 'common/navigation.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: '로그인 데모',
       theme: ThemeData(
         // This is the theme of your application.
@@ -53,7 +55,10 @@ class MyApp extends StatelessWidget {
         '/signup-method': (context) => const SignupMethodPage(),
         '/signup-info': (context) => const SignupInfoPage(),
         '/lobby': (context) => const LobbyPage(),
-        '/profile': (context) => const ProfilePage(),
+        '/profile': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          return ProfilePage(username: args as String?);
+        },
         '/guidelines': (context) => const GuidelinesPage(),
         '/settings': (context) => const SettingsPage(),
       },
