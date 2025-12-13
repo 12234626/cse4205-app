@@ -55,7 +55,10 @@ class MyApp extends StatelessWidget {
         '/signup-method': (context) => const SignupMethodPage(),
         '/signup-info': (context) => const SignupInfoPage(),
         '/lobby': (context) => const LobbyPage(),
-        '/profile': (context) => const ProfilePage(),
+        '/profile': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          return ProfilePage(username: args as String?);
+        },
         '/guidelines': (context) => const GuidelinesPage(),
         '/settings': (context) => const SettingsPage(),
       },

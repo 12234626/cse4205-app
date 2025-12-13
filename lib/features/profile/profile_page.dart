@@ -67,6 +67,22 @@ class _ProfilePageState extends State<ProfilePage>
     _loadDailyQuestProgress();
   }
 
+  Map<String, dynamic> _getTierInfo(int level) {
+    if (level <= 50) {
+      return {'name': '없음', 'color': Colors.grey};
+    } else if (level <= 100) {
+      return {'name': '브론즈', 'color': const Color(0xFFCD7F32)};
+    } else if (level <= 150) {
+      return {'name': '실버', 'color': const Color(0xFFC0C0C0)};
+    } else if (level <= 200) {
+      return {'name': '골드', 'color': const Color(0xFFFFD700)};
+    } else if (level <= 250) {
+      return {'name': '플래티넘', 'color': const Color(0xFF47F5BB)};
+    } else {
+      return {'name': '다이아', 'color': const Color(0xFFB9F2FF)};
+    }
+  }
+
   Future<void> _loadUserProfile() async {
     try {
       final endpoint = widget.username != null
@@ -383,10 +399,19 @@ class _ProfilePageState extends State<ProfilePage>
       child: Column(
         children: [
           // 프로필 사진
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: AppColors.primary,
-            child: const Icon(Icons.person, size: 60, color: Colors.white),
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: _getTierInfo(_level)['color'],
+                width: 4,
+              ),
+            ),
+            child: CircleAvatar(
+              radius: 50,
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.person, size: 60, color: Colors.white),
+            ),
           ),
 
           const SizedBox(height: 16),
