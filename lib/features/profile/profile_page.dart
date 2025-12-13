@@ -15,10 +15,10 @@ class FallingLeaf {
   final double swayAmount; // 좌우 흔들림 정도
 
   FallingLeaf()
-      : x = math.Random().nextDouble(),
-        rotation = math.Random().nextDouble() * math.pi * 2,
-        speed = 0.8 + math.Random().nextDouble() * 0.4,
-        swayAmount = 0.05 + math.Random().nextDouble() * 0.1;
+    : x = math.Random().nextDouble(),
+      rotation = math.Random().nextDouble() * math.pi * 2,
+      speed = 0.8 + math.Random().nextDouble() * 0.4,
+      swayAmount = 0.05 + math.Random().nextDouble() * 0.1;
 }
 
 class ProfilePage extends StatefulWidget {
@@ -71,7 +71,7 @@ class _ProfilePageState extends State<ProfilePage>
     try {
       final endpoint = widget.username != null
           ? '/api/user/profile/username/${widget.username}'
-// 현재 사용자 프로필
+          // 현재 사용자 프로필
           : '/api/user/profile';
 
       final response = await ApiService.get(endpoint);
@@ -83,8 +83,9 @@ class _ProfilePageState extends State<ProfilePage>
             _streak = response.data['streak'] ?? 0;
 
             final expValue = response.data['exp'] ?? 0;
-            final int exp =
-                expValue is int ? expValue : (expValue as num).toInt();
+            final int exp = expValue is int
+                ? expValue
+                : (expValue as num).toInt();
 
             _level = exp ~/ 100;
             _currentExp = exp % 100;
@@ -112,7 +113,8 @@ class _ProfilePageState extends State<ProfilePage>
 
   Future<void> _loadDailyQuestProgress() async {
     try {
-      final response = await ApiService.post('/api/user-quest/daily/assign');
+      // 서버에서 매일 06시에 자동으로 퀘스트 할당, 클라이언트는 조회만
+      final response = await ApiService.get('/api/user-quest/daily/today');
 
       if (response.success && response.data != null) {
         if (mounted) {
@@ -209,9 +211,7 @@ class _ProfilePageState extends State<ProfilePage>
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -303,7 +303,7 @@ class _ProfilePageState extends State<ProfilePage>
                   colors: [
                     Colors.transparent, // 위: 완전 투명
                     Colors.transparent, // 중간까지 투명
-                    Colors.white,       // 아래: 흰색으로
+                    Colors.white, // 아래: 흰색으로
                   ],
                   stops: [0.0, 0.6, 1.0],
                 ),
@@ -312,18 +312,18 @@ class _ProfilePageState extends State<ProfilePage>
           ),
 
           // 나무 이미지 (바운스 애니메이션 적용)
-            Positioned(
-              bottom: 60,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Image.asset(
-                  _getPlantImagePath(stage),
-                  height: 180 * plantSize,
-                  fit: BoxFit.contain,
-                ),
+          Positioned(
+            bottom: 60,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Image.asset(
+                _getPlantImagePath(stage),
+                height: 180 * plantSize,
+                fit: BoxFit.contain,
               ),
             ),
+          ),
 
           // 나뭇잎 이펙트 (나무 단계일 때만)
           if (stage == PlantStage.tree)
@@ -347,8 +347,10 @@ class _ProfilePageState extends State<ProfilePage>
             builder: (context, value, child) {
               final sway = math.sin(value * math.pi * 4) * leaf.swayAmount;
 
-              final dx = (screenWidth * (leaf.x + sway))
-                  .clamp(0.0, screenWidth - 20);
+              final dx = (screenWidth * (leaf.x + sway)).clamp(
+                0.0,
+                screenWidth - 20,
+              );
 
               final dy = 50 + (200 * value * leaf.speed);
 
@@ -392,8 +394,10 @@ class _ProfilePageState extends State<ProfilePage>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(12),
@@ -432,10 +436,7 @@ class _ProfilePageState extends State<ProfilePage>
         children: [
           const Text(
             '경험치',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
 
@@ -447,7 +448,9 @@ class _ProfilePageState extends State<ProfilePage>
               decoration: BoxDecoration(
                 color: Colors.grey.shade200,
                 border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.3), width: 2),
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  width: 2,
+                ),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Stack(
@@ -516,10 +519,7 @@ class _ProfilePageState extends State<ProfilePage>
 
           Text(
             '다음 레벨까지 $_nextLevelExp EXP',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -537,10 +537,7 @@ class _ProfilePageState extends State<ProfilePage>
         children: [
           const Text(
             '오늘의 실천',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
 
@@ -556,7 +553,9 @@ class _ProfilePageState extends State<ProfilePage>
                   ),
                   height: 12,
                   decoration: BoxDecoration(
-                    color: isCompleted ? AppColors.primary : Colors.grey.shade300,
+                    color: isCompleted
+                        ? AppColors.primary
+                        : Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
@@ -573,8 +572,9 @@ class _ProfilePageState extends State<ProfilePage>
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border:
-                    Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -595,10 +595,7 @@ class _ProfilePageState extends State<ProfilePage>
           else
             Text(
               '$_completedDailyQuests / $_totalDailyQuests 완료 (2개 이상이면 스트릭 증가)',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
         ],
       ),
@@ -613,10 +610,7 @@ class _ProfilePageState extends State<ProfilePage>
         children: [
           const Text(
             '테마 선택',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
 
@@ -651,10 +645,7 @@ class _ProfilePageState extends State<ProfilePage>
                     SizedBox(height: 4),
                     Text(
                       '현재 적용 중',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                   ],
                 ),
@@ -683,9 +674,11 @@ class StripePainter extends CustomPainter {
     final stripeSpacing = 30.0;
     final offset = progress * stripeSpacing;
 
-    for (double x = -stripeSpacing + offset;
-        x < size.width;
-        x += stripeSpacing) {
+    for (
+      double x = -stripeSpacing + offset;
+      x < size.width;
+      x += stripeSpacing
+    ) {
       final path = Path()
         ..moveTo(x, 0)
         ..lineTo(x + stripeWidth, 0)
