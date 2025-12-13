@@ -50,7 +50,7 @@ class _CommunityPageState extends State<CommunityPage> {
                 debugPrint('Invalid author data: $authorData');
                 continue;
               }
-              final author = authorData as Map<String, dynamic>;
+              final author = authorData;
 
               // reviews를 안전하게 추출하고 유효한 reviewer가 있는 것만 필터링
               final reviewsData = postData['reviews'];

@@ -79,7 +79,6 @@ class _CommunityDetailPageState extends State<CommunityDetailPage> {
         _likeCount++;
       }
     });
-    // TODO: API 호출로 인증 완료 처리
   }
 
   @override
