@@ -1,9 +1,10 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
+import '../common/navigation.dart';
 
 class ResponseDto {
   final int statusCode;
@@ -26,7 +27,8 @@ class ApiService {
 
   static const _storage = FlutterSecureStorage();
   static bool _isRefreshing = false;
-  static final List<Completer<void>> _requestQueue = [];
+  static bool _isRedirectingToLogin = false;
+  static final List<Completer<bool>> _refreshWaiters = [];
 
   static String _getTokenKey(String type) => '${type}_token';
 
@@ -44,6 +46,8 @@ class ApiService {
     if (accessToken != null && refreshToken != null) {
       await _storage.write(key: _getTokenKey('access'), value: accessToken);
       await _storage.write(key: _getTokenKey('refresh'), value: refreshToken);
+      // ✅ 로그인/재발급 성공 시 리다이렉트 플래그 해제
+      _isRedirectingToLogin = false;
     } else {
       await _storage.delete(key: _getTokenKey('access'));
       await _storage.delete(key: _getTokenKey('refresh'));
@@ -71,16 +75,49 @@ class ApiService {
         : json.encode(body);
   }
 
+  // ✅ JSON이 아닐 수 있는 응답(빈 문자열/HTML 등) 방어
+  static Map<String, dynamic>? _tryDecodeMap(String body) {
+    try {
+      final decoded = json.decode(body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static ResponseDto _formatResponse(http.Response response) {
-    final body = json.decode(response.body);
+    final map = _tryDecodeMap(response.body);
 
     return ResponseDto(
-      body['statusCode'] as int? ?? response.statusCode,
-      body['success'] as bool? ?? false,
-      body['data'],
-      body['error'],
-      body['message'],
+      (map?['statusCode'] as int?) ?? response.statusCode,
+      (map?['success'] as bool?) ?? false,
+      map?['data'],
+      map?['error'],
+      map?['message'] ?? (map == null ? response.body : null),
     );
+  }
+
+  // ✅ 401 판단을 statusCode 우선으로
+  static bool _isUnauthorized(http.Response response) {
+    if (response.statusCode == 401) return true;
+    final map = _tryDecodeMap(response.body);
+    return map?['error'] == 'UNAUTHORIZED';
+  }
+
+  static void _goLoginAndClearStack() {
+    if (_isRedirectingToLogin) return;
+    _isRedirectingToLogin = true;
+
+    // UI 프레임 이후 안전하게 네비게이션
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/', (route) => false);
+    });
+  }
+
+  static Future<void> _forceLogout() async {
+    await setToken(null, null);
+    _goLoginAndClearStack();
   }
 
   static Future<bool> _refreshToken() async {
@@ -93,13 +130,16 @@ class ApiService {
         Uri.parse('$_baseUrl/api/auth/refresh'),
         headers: await _getHeaders({}, 'refresh'),
       );
+      if (response.statusCode == 401) return false;
       final body = _formatResponse(response);
 
       if (body.success == true) {
-        final accessToken = body.data['accessToken'];
-        final refreshToken = body.data['refreshToken'];
+        if (body.data is! Map) return false;
+        final accessToken = (body.data as Map)['accessToken'];
+        final newRefreshToken = (body.data as Map)['refreshToken'];
 
-        await setToken(accessToken, refreshToken);
+        if (accessToken is! String || newRefreshToken is! String) return false;
+        await setToken(accessToken, newRefreshToken);
 
         return true;
       }
@@ -114,46 +154,57 @@ class ApiService {
     http.Response response,
     Future<http.Response> Function() request,
   ) async {
-    final ResponseDto body = _formatResponse(response);
+    if (!_isUnauthorized(response)) return response;
+    if (_isRedirectingToLogin) return response;
 
-    if (body.error == "UNAUTHORIZED") {
-      if (_isRefreshing) {
-        final completer = Completer<void>();
+    // 누군가 refresh 중이면 기다렸다가 결과에 따라 처리
+    if (_isRefreshing) {
+      final waiter = Completer<bool>();
+      _refreshWaiters.add(waiter);
+      final ok = await waiter.future;
 
-        _requestQueue.add(completer);
-        await completer.future;
-
-        return await request();
+      if (!ok) {
+        await _forceLogout();
+        return response;
       }
 
-      _isRefreshing = true;
-
-      try {
-        final success = await _refreshToken();
-
-        for (Completer<void> completer in _requestQueue) {
-          completer.complete();
-        }
-
-        if (!success) {
-          await setToken(null, null);
-
-          return response;
-        }
-        return await request();
-      } catch (error) {
-        for (Completer<void> completer in _requestQueue) {
-          completer.completeError(error);
-        }
-
-        rethrow;
-      } finally {
-        _isRefreshing = false;
-        _requestQueue.clear();
+      final retried = await request();
+      // ✅ 재요청도 401이면 "항상 로그인 이동" 보장
+      if (_isUnauthorized(retried)) {
+        await _forceLogout();
       }
+      return retried;
     }
 
-    return response;
+    _isRefreshing = true;
+    bool ok = false;
+
+    try {
+      ok = await _refreshToken();
+
+      for (final w in _refreshWaiters) {
+        if (!w.isCompleted) w.complete(ok);
+      }
+
+      if (!ok) {
+        await _forceLogout();
+        return response;
+      }
+
+      final retried = await request();
+      if (_isUnauthorized(retried)) {
+        await _forceLogout();
+      }
+      return retried;
+    } catch (error) {
+      for (final w in _refreshWaiters) {
+        if (!w.isCompleted) w.complete(false);
+      }
+      rethrow;
+    } finally {
+      _isRefreshing = false;
+      _refreshWaiters.clear();
+    }
   }
 
   static Future<ResponseDto> _request(
