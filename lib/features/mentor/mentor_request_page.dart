@@ -135,97 +135,101 @@ class _MentorRequestPageState extends State<MentorRequestPage> {
         ),
         title: const Text('멘토 요청'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '멘토 추가',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '멘토의 닉네임을 입력하여 요청을 보내세요.',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 32),
-            TextField(
-              controller: _mentorUsernameController,
-              decoration: InputDecoration(
-                labelText: '멘토 닉네임',
-                hintText: '멘토 닉네임을 입력하세요',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.primary, width: 2),
-                ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '멘토 추가',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-              enabled: !_hasMentor,
-              onChanged: (value) {
-                if (!_hasMentor &&
-                    (_errorMessage != null || _successMessage != null)) {
-                  setState(() {
-                    _errorMessage = null;
-                    _successMessage = null;
-                  });
-                }
-              },
-            ),
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red, fontSize: 12),
-                ),
+              const SizedBox(height: 8),
+              Text(
+                '멘토의 닉네임을 입력하여 요청을 보내세요.',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
-            if (_successMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  _successMessage!,
-                  style: const TextStyle(color: Colors.green, fontSize: 12),
-                ),
-              ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: (_isLoading || _hasMentor)
-                    ? null
-                    : _sendMentorRequest,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _hasMentor ? Colors.grey : AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
+              const SizedBox(height: 32),
+              TextField(
+                controller: _mentorUsernameController,
+                decoration: InputDecoration(
+                  labelText: '멘토 닉네임',
+                  hintText: '멘토 닉네임을 입력하세요',
+                  border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                  ),
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+                enabled: !_hasMentor,
+                onChanged: (value) {
+                  if (!_hasMentor &&
+                      (_errorMessage != null || _successMessage != null)) {
+                    setState(() {
+                      _errorMessage = null;
+                      _successMessage = null;
+                    });
+                  }
+                },
+              ),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                ),
+              if (_successMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    _successMessage!,
+                    style: const TextStyle(color: Colors.green, fontSize: 12),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: (_isLoading || _hasMentor)
+                      ? null
+                      : _sendMentorRequest,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _hasMentor
+                        ? Colors.grey
+                        : AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          '멘토 요청 보내기',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      )
-                    : const Text(
-                        '멘토 요청 보내기',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

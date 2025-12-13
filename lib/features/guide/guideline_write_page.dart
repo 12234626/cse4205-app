@@ -341,9 +341,10 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
             ),
           ],
         ),
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            return Stack(
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Stack(
               children: [
                 Column(
                   mainAxisSize: MainAxisSize.max,
@@ -591,6 +592,7 @@ class _GuidelineWritePageState extends State<GuidelineWritePage> {
               ],
             );
           },
+        ),
         ),
       ),
     );
