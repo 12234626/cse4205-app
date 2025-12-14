@@ -222,7 +222,7 @@ class ApiService {
     Map<String, String>? headers,
   }) async {
     final fullUrl = '$_baseUrl$url';
-    print('[API REQUEST] GET $fullUrl');
+    debugPrint('[API REQUEST] GET $fullUrl');
 
     return _request(() async {
       return await http.get(
@@ -238,8 +238,8 @@ class ApiService {
     Map<String, String>? headers,
   }) async {
     final fullUrl = '$_baseUrl$url';
-    print('[API REQUEST] POST $fullUrl');
-    print('[API REQUEST BODY] $body');
+    debugPrint('[API REQUEST] POST $fullUrl');
+    debugPrint('[API REQUEST BODY] $body');
 
     return _request(() async {
       return await http.post(
@@ -256,8 +256,8 @@ class ApiService {
     Map<String, String>? headers,
   }) async {
     final fullUrl = '$_baseUrl$url';
-    print('[API REQUEST] PUT $fullUrl');
-    print('[API REQUEST BODY] $body');
+    debugPrint('[API REQUEST] PUT $fullUrl');
+    debugPrint('[API REQUEST BODY] $body');
 
     return _request(() async {
       return await http.put(
@@ -274,8 +274,8 @@ class ApiService {
     Map<String, String>? headers,
   }) async {
     final fullUrl = '$_baseUrl$url';
-    print('[API REQUEST] PATCH $fullUrl');
-    print('[API REQUEST BODY] $body');
+    debugPrint('[API REQUEST] PATCH $fullUrl');
+    debugPrint('[API REQUEST BODY] $body');
 
     return _request(() async {
       return await http.patch(
@@ -292,8 +292,8 @@ class ApiService {
     Map<String, String>? headers,
   }) async {
     final fullUrl = '$_baseUrl$url';
-    print('[API REQUEST] DELETE $fullUrl');
-    print('[API REQUEST BODY] $body');
+    debugPrint('[API REQUEST] DELETE $fullUrl');
+    debugPrint('[API REQUEST BODY] $body');
 
     return _request(() async {
       return await http.delete(
