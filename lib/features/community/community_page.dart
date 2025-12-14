@@ -26,7 +26,7 @@ class _CommunityPageState extends State<CommunityPage> {
   void _filterPosts() {
     setState(() {
       if (_selectedStatus == 'PENDING') {
-        _posts = _allPosts.where((post) => post.likes == 0).toList();
+        _posts = _allPosts.where((post) => post.likes < 3).toList();
       } else {
         _posts = _allPosts.where((post) => post.likes > 2).toList();
       }
