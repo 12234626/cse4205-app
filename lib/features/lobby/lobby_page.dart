@@ -33,6 +33,8 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   bool _isLoadingQuests = false;
   Set<int> _questsReadyForAuth = {}; // 인증 버튼 상태로 변경된 퀘스트 ID들
   Map<int, Timer?> _authButtonTimers = {}; // 각 퀘스트별 타이머
+  int _currentExp = 0;
+  int _nextLevelExp = 100;
 
   late AnimationController _waveController;
   late Animation<double> _waveAnimation;
@@ -183,6 +185,8 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
             _streak = response.data['streak'] ?? 0;
             final exp = (response.data['exp'] ?? 0) as int;
             _level = exp ~/ 100;
+            _currentExp = exp % 100;
+            _nextLevelExp = 100 - _currentExp;
             _role = response.data['role'] ?? 'MENTEE';
             _isLoading = false;
           });
@@ -466,93 +470,136 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           )
-                        : Row(
+                        : Column(
                             children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: _getTierInfo(_level)['color'],
-                                    width: 4,
-                                  ),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 40,
-                                  backgroundColor: Colors.blue[400],
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 45,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 20),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // 레벨
-                                    Text(
-                                      'Lv. $_level',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey[700],
+                              Row(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: _getTierInfo(_level)['color'],
+                                        width: 4,
                                       ),
                                     ),
-                                    const SizedBox(height: 6),
-                                    // 사용자 닉네임
-                                    Text(
-                                      _username,
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
+                                    child: CircleAvatar(
+                                      radius: 40,
+                                      backgroundColor: Colors.blue[400],
+                                      child: const Icon(
+                                        Icons.person,
+                                        size: 45,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                    const SizedBox(height: 10),
-                                    // 스트릭 정보
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.local_fire_department,
-                                            color: Colors.deepOrange,
-                                            size: 18,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            '$_streak일 연속 달성!',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.grey[800],
+                                  ),
+                                  const SizedBox(width: 20),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // (1) 레벨 / 닉네임 / 트로피 정보
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Lv. $_level',
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.grey[700],
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  _username,
+                                                  style: const TextStyle(
+                                                    fontSize: 22,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                        ],
+                                            const Spacer(),
+                                            Stack(
+                                              clipBehavior: Clip.none,
+                                              children: [
+                                                Icon(
+                                                  _getLevelIcon(_level),
+                                                  color: _getLevelColor(_level)
+                                                      .withValues(alpha: 0.5),
+                                                  size: 56,
+                                                ),
+                                                // 스파클 이펙트들
+                                                Positioned(
+                                                  top: -4,
+                                                  right: -4,
+                                                  child: Icon(
+                                                    Icons.auto_awesome,
+                                                    color: Colors.yellow[300],
+                                                    size: 16,
+                                                  ),
+                                                ),
+                                                Positioned(
+                                                  top: -2,
+                                                  left: -2,
+                                                  child: Icon(
+                                                    Icons.star,
+                                                    color: _getLevelColor(_level)
+                                                        .withValues(alpha: 0.6),
+                                                    size: 12,
+                                                  ),
+                                                ),
+                                                Positioned(
+                                                  bottom: -2,
+                                                  right: 8,
+                                                  child: Icon(
+                                                    Icons.star,
+                                                    color: _getLevelColor(_level)
+                                                        .withValues(alpha: 0.5),
+                                                    size: 10,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        // (2) 경험치 바
+                                        _buildExpBar(),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              // (3) 탄소 절감 실천 횟수 - 가운데 정렬
+                              Center(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.local_fire_department,
+                                      color: Colors.deepOrange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '탄소 절감을 $_streak일 실천했어요!',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[700],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              // 오른쪽 레벨 아이콘 (큰 버전)
-                              Icon(
-                                _getLevelIcon(_level),
-                                color: _getLevelColor(
-                                  _level,
-                                ).withValues(alpha: 0.3),
-                                size: 50,
                               ),
                             ],
                           ),
@@ -1413,6 +1460,65 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildExpBar() {
+    final progress = _currentExp / 100;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 경험치 바
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Stack(
+              children: [
+                FractionallySizedBox(
+                  widthFactor: progress,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.green.shade400,
+                          Colors.green.shade600,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    '$_currentExp / 100 EXP',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: progress > 0.3 ? Colors.white : Colors.grey[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        // 다음 레벨까지 필요한 경험치
+        Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            '다음 레벨까지 $_nextLevelExp EXP',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
