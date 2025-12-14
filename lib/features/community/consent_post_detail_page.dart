@@ -202,6 +202,7 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
 
       if (response.success) {
         _commentController.clear();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('인증이 완료되었습니다!'),
@@ -211,14 +212,18 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
         // 게시글 새로고침
         _loadPost();
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response.message?.toString() ?? '인증에 실패했습니다.'),
+            content: Text(
+              response.message?.toString() ?? '직속 멘토는 인증 댓글을 작성할 수 없습니다',
+            ),
             backgroundColor: Colors.red,
           ),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('오류가 발생했습니다: ${e.toString()}'),
@@ -650,7 +655,7 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
                     }
                   },
                   decoration: InputDecoration(
-                    hintText: 'lgtm',
+                    hintText: '인증 완료 댓글을 입력해주세요...',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide(color: Colors.grey[300]!),
