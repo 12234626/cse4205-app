@@ -26,9 +26,9 @@ class _SocialLoginPageState extends State<SocialLoginPage> {
 
         if (!mounted) return;
 
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$providerName 로그인 성공!')));
+        // ScaffoldMessenger.of(
+        //   context,
+        // ).showSnackBar(SnackBar(content: Text('$providerName 로그인 성공!')));
 
         // 기존 회원 → 로비로 이동
         Navigator.pushReplacementNamed(context, '/lobby');
