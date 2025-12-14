@@ -94,7 +94,7 @@ class ApiService {
       return ResponseDto(
         body['statusCode'] as int? ?? response.statusCode,
         body['success'] as bool? ?? false,
-        body['data'] as Map<String, dynamic>?,
+        body['data'],
         body['error'],
         body['message'],
       );
