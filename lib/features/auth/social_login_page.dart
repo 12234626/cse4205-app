@@ -87,7 +87,22 @@ class _SocialLoginPageState extends State<SocialLoginPage> {
                   const SizedBox(height: 80),
 
                   if (_isLoading)
-                    const CircularProgressIndicator()
+                    Column(
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 24),
+                        Text(
+                          '오늘의 작은 실천이\n내일의 지구를 살릴 수 있습니다!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green[700],
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    )
                   else ...[
                     // 구글 로그인 버튼
                     SizedBox(
@@ -170,44 +185,11 @@ class _SocialLoginPageState extends State<SocialLoginPage> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 24),
-
-                  // 회원가입 버튼
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SignupStepPage(),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      '계정이 없으신가요? 회원가입',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
         ),
-      ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            heroTag: 'lobbyButton',
-            onPressed: () => Navigator.pushNamed(context, '/lobby'),
-            tooltip: '로비 페이지로 이동',
-            child: const Icon(Icons.home),
-          ),
-        ],
       ),
     );
   }

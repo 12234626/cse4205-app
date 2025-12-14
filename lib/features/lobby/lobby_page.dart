@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 import '../../common/constants.dart';
 import '../survey/carbon_survey_page.dart';
 import '../guide/guidelines.dart';
@@ -35,9 +36,11 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   Map<int, Timer?> _authButtonTimers = {}; // 각 퀘스트별 타이머
   int _currentExp = 0;
   int _nextLevelExp = 100;
+  int _currentCarouselPage = 0;
 
   late AnimationController _waveController;
   late Animation<double> _waveAnimation;
+  late PageController _carouselController;
 
   @override
   void initState() {
@@ -54,6 +57,9 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     _waveAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _waveController, curve: Curves.easeInOut),
     );
+
+    // 캐러셀 컨트롤러 초기화
+    _carouselController = PageController(viewportFraction: 0.85);
 
     // 애니메이션 시퀀스 시작
     _startAnimationSequence();
@@ -72,6 +78,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   @override
   void dispose() {
     _waveController.dispose();
+    _carouselController.dispose();
     // 모든 타이머 취소
     for (var timer in _authButtonTimers.values) {
       timer?.cancel();
@@ -618,9 +625,15 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    '일일 퀘스트',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Row(
+                    children: [
+                      Icon(Icons.task_alt, color: Colors.blue[700], size: 20),
+                      const SizedBox(width: 8),
+                      const Text(
+                        '일일 퀘스트',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                   IconButton(
                     icon: const Icon(Icons.refresh),
@@ -667,18 +680,58 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                     ),
                   );
                 }),
+              const SizedBox(height: 16),
+              
+              // 일일 퀘스트 새로고침 시간 안내
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.access_time, color: Colors.grey[600], size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      '일일 퀘스트는 매일 오전 6시에 새로고침됩니다.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
 
               // 하단 메뉴
               _buildMenuButton(context, '일일퀘스트 가이드라인', Icons.book, () {
                 Navigator.pushNamed(context, '/guidelines');
               }),
+              const SizedBox(height: 32),
+
+              // 탄소 중립 더 보기 섹션
+              Row(
+                children: [
+                  Icon(Icons.lightbulb, color: Colors.amber[700], size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    '탄소 중립 더 보기',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildCarouselSection(),
               const SizedBox(height: 24),
 
               // 탄소중립 레벨 측정 섹션
-              const Text(
-                '내 실천 레벨',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  Icon(Icons.analytics, color: Colors.purple[700], size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    '내 실천 레벨 측정하기',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               _buildCarbonSurveyButton(context),
@@ -1228,9 +1281,15 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            '관리 중인 멘티',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Icon(Icons.groups, color: Colors.green[700], size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                '관리 중인 멘티',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -1350,9 +1409,15 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            '나의 멘토',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Icon(Icons.school, color: Colors.orange[700], size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                '나의 멘토',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -1520,5 +1585,115 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
         ),
       ],
     );
+  }
+
+  // 탄소 중립 정보 캐러셀
+  Widget _buildCarouselSection() {
+    final carouselItems = [
+      {
+        'image': 'assets/images/EBS_CN.png',
+        'url': 'https://www.youtube.com/watch?v=XVAoQ60yAZc',
+        'title': 'EBS 탄소중립',
+      },
+      {
+        'image': 'assets/images/CBportal.png',
+        'url': 'https://www.gihoo.or.kr/netzero',
+        'title': '탄소중립 포털',
+      },
+      {
+        'image': 'assets/images/envportal.png',
+        'url': 'https://www.mcee.go.kr/home/web/main.do',
+        'title': '환경교육포털',
+      },
+    ];
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 180,
+          child: PageView.builder(
+            controller: _carouselController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentCarouselPage = index;
+              });
+            },
+            itemCount: carouselItems.length,
+            itemBuilder: (context, index) {
+              return AnimatedBuilder(
+                animation: _carouselController,
+                builder: (context, child) {
+                  double value = 1.0;
+                  if (_carouselController.position.haveDimensions) {
+                    value = _carouselController.page! - index;
+                    value = (1 - (value.abs() * 0.15)).clamp(0.85, 1.0);
+                  }
+                  return Center(
+                    child: SizedBox(
+                      height: Curves.easeInOut.transform(value) * 180,
+                      child: child,
+                    ),
+                  );
+                },
+                child: GestureDetector(
+                  onTap: () => _launchURL(carouselItems[index]['url']!),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        carouselItems[index]['image']!,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        // 페이지 인디케이터
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            carouselItems.length,
+            (index) => Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: _currentCarouselPage == index ? 24 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                color: _currentCarouselPage == index
+                    ? Colors.blue
+                    : Colors.grey[300],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // URL 열기
+  Future<void> _launchURL(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('링크를 열 수 없습니다.')),
+        );
+      }
+    }
   }
 }
