@@ -24,8 +24,10 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
   String? _errorMessage;
   String _currentUserRole = 'MENTEE';
   int? _currentUserId;
+  int? _currentMentorId;
   final TextEditingController _commentController = TextEditingController();
   bool _isSubmitting = false;
+  String? _commentError;
   List<String> _presignedImageUrls = [];
   bool _isLoadingImages = false;
 
@@ -108,6 +110,16 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
           _currentUserRole = response.data['role'] ?? 'MENTEE';
           _currentUserId = response.data['userId'];
         });
+
+        // 멘티인 경우 멘토 정보 조회
+        if (_currentUserRole == 'MENTEE') {
+          final mentorResponse = await ApiService.get('/api/user/mentor');
+          if (mentorResponse.success && mentorResponse.data != null) {
+            setState(() {
+              _currentMentorId = mentorResponse.data['userId'];
+            });
+          }
+        }
       }
     } catch (e) {
       // 프로필 로드 실패 시 기본값 유지
@@ -158,12 +170,27 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
   }
 
   Future<void> _submitReview() async {
+    // 빈 댓글 체크
     if (_commentController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('댓글 내용을 입력해주세요.')));
+      setState(() {
+        _commentError = '내용을 입력해주세요';
+      });
       return;
     }
+
+    // 직속 멘토 체크
+    if (_post != null && _currentMentorId != null) {
+      if (_post!.author.userId == _currentMentorId) {
+        setState(() {
+          _commentError = '직속 멘토는 인증 댓글을 작성할 수 없습니다';
+        });
+        return;
+      }
+    }
+
+    setState(() {
+      _commentError = null;
+    });
 
     setState(() => _isSubmitting = true);
 
@@ -597,43 +624,65 @@ class _ConsentPostDetailPageState extends State<ConsentPostDetailPage> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: TextField(
-              controller: _commentController,
-              enabled: !_isSubmitting,
-              maxLines: null,
-              decoration: InputDecoration(
-                hintText: 'lgtm',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
+          // 에러 메시지
+          if (_commentError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Text(
+                _commentError!,
+                style: const TextStyle(color: Colors.red, fontSize: 12),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          FloatingActionButton(
-            onPressed: _isSubmitting ? null : _submitReview,
-            backgroundColor: AppColors.primary,
-            mini: true,
-            child: _isSubmitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          // 댓글 입력 필드
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _commentController,
+                  enabled: !_isSubmitting,
+                  maxLines: null,
+                  onChanged: (value) {
+                    if (_commentError != null && value.trim().isNotEmpty) {
+                      setState(() => _commentError = null);
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'lgtm',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
                     ),
-                  )
-                : const Icon(Icons.send, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FloatingActionButton(
+                onPressed: _isSubmitting ? null : _submitReview,
+                backgroundColor: AppColors.primary,
+                mini: true,
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.send, size: 20),
+              ),
+            ],
           ),
         ],
       ),

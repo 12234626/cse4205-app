@@ -623,9 +623,9 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               const SizedBox(height: 24),
 
               // 하단 메뉴
-              _buildMenuButton(context, '개인설정', Icons.person_outline, () {}),
-              const SizedBox(height: 8),
-              _buildMenuButton(context, '특강 안내', Icons.school, () {}),
+              _buildMenuButton(context, '일일퀘스트 가이드라인', Icons.book, () {
+                Navigator.pushNamed(context, '/guidelines');
+              }),
               const SizedBox(height: 24),
 
               // 탄소중립 레벨 측정 섹션
@@ -1157,7 +1157,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   Widget _buildCarbonSurveyButton(BuildContext context) {
     return Card(
       elevation: 6,
-      color: Color.fromRGBO(129, 199, 132, 0.3),
+      color: const Color(0xFFD4EDDA),
       child: ListTile(
         leading: Icon(Icons.eco, color: AppColors.primary, size: 32),
         title: const Text(
