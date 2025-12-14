@@ -13,12 +13,24 @@ class CommunityPage extends StatefulWidget {
 
 class _CommunityPageState extends State<CommunityPage> {
   List<CommunityPost> _posts = [];
+  List<CommunityPost> _allPosts = [];
   bool _isLoading = false;
+  String _selectedStatus = 'PENDING'; // PENDING or CONSENTED
 
   @override
   void initState() {
     super.initState();
     _loadPosts();
+  }
+
+  void _filterPosts() {
+    setState(() {
+      if (_selectedStatus == 'PENDING') {
+        _posts = _allPosts.where((post) => post.likes == 0).toList();
+      } else {
+        _posts = _allPosts.where((post) => post.likes > 2).toList();
+      }
+    });
   }
 
   Future<void> _loadPosts() async {
@@ -80,13 +92,15 @@ class _CommunityPageState extends State<CommunityPage> {
               String dateStr;
               try {
                 final createdAt = postData['createdAt'];
-                if (createdAt is String && createdAt.length >= 10) {
-                  dateStr = createdAt.substring(0, 10);
+                if (createdAt is String) {
+                  // ISO 8601 형식의 문자열에서 날짜 부분만 추출
+                  dateStr = createdAt.split('T')[0];
                 } else {
-                  dateStr = DateTime.now().toIso8601String().substring(0, 10);
+                  dateStr = DateTime.now().toIso8601String().split('T')[0];
                 }
               } catch (e) {
-                dateStr = DateTime.now().toIso8601String().substring(0, 10);
+                debugPrint('날짜 파싱 오류: $e');
+                dateStr = DateTime.now().toIso8601String().split('T')[0];
               }
 
               // userQuestId 안전하게 파싱
@@ -130,9 +144,10 @@ class _CommunityPageState extends State<CommunityPage> {
           }
 
           setState(() {
-            _posts = posts;
+            _allPosts = posts;
             _isLoading = false;
           });
+          _filterPosts();
         }
       } else {
         if (mounted) {
@@ -202,29 +217,85 @@ class _CommunityPageState extends State<CommunityPage> {
         title: const Text('인증 게시판'),
       ),
       body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: _loadPosts,
-                child: _posts.isEmpty
-                    ? const Center(
-                        child: Text(
-                          '아직 게시글이 없습니다.\n첫 게시글을 작성해보세요!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _posts.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final post = _posts[index];
-                          return _buildPostCard(post);
-                        },
+        child: Column(
+          children: [
+            // 카테고리 버튼
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              color: Colors.grey[100],
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() => _selectedStatus = 'PENDING');
+                        _filterPosts();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _selectedStatus == 'PENDING'
+                            ? AppColors.primary
+                            : Colors.grey[300],
+                        foregroundColor: _selectedStatus == 'PENDING'
+                            ? Colors.white
+                            : Colors.black87,
+                        elevation: _selectedStatus == 'PENDING' ? 4 : 0,
                       ),
+                      child: const Text('인증 대기중'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() => _selectedStatus = 'CONSENTED');
+                        _filterPosts();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _selectedStatus == 'CONSENTED'
+                            ? AppColors.primary
+                            : Colors.grey[300],
+                        foregroundColor: _selectedStatus == 'CONSENTED'
+                            ? Colors.white
+                            : Colors.black87,
+                        elevation: _selectedStatus == 'CONSENTED' ? 4 : 0,
+                      ),
+                      child: const Text('인증 완료'),
+                    ),
+                  ),
+                ],
               ),
+            ),
+            // 게시글 목록
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                      onRefresh: _loadPosts,
+                      child: _posts.isEmpty
+                          ? const Center(
+                              child: Text(
+                                '아직 게시글이 없습니다.\n첫 게시글을 작성해보세요!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _posts.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final post = _posts[index];
+                                return _buildPostCard(post);
+                              },
+                            ),
+                    ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
