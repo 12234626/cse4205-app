@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 import '../../common/constants.dart';
 import '../survey/carbon_survey_page.dart';
 import '../guide/guidelines.dart';
@@ -33,9 +34,13 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   bool _isLoadingQuests = false;
   Set<int> _questsReadyForAuth = {}; // 인증 버튼 상태로 변경된 퀘스트 ID들
   Map<int, Timer?> _authButtonTimers = {}; // 각 퀘스트별 타이머
+  int _currentExp = 0;
+  int _nextLevelExp = 100;
+  int _currentCarouselPage = 0;
 
   late AnimationController _waveController;
   late Animation<double> _waveAnimation;
+  late PageController _carouselController;
 
   @override
   void initState() {
@@ -52,6 +57,9 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
     _waveAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _waveController, curve: Curves.easeInOut),
     );
+
+    // 캐러셀 컨트롤러 초기화
+    _carouselController = PageController(viewportFraction: 0.85);
 
     // 애니메이션 시퀀스 시작
     _startAnimationSequence();
@@ -70,6 +78,7 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
   @override
   void dispose() {
     _waveController.dispose();
+    _carouselController.dispose();
     // 모든 타이머 취소
     for (var timer in _authButtonTimers.values) {
       timer?.cancel();
@@ -183,6 +192,8 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
             _streak = response.data['streak'] ?? 0;
             final exp = (response.data['exp'] ?? 0) as int;
             _level = exp ~/ 100;
+            _currentExp = exp % 100;
+            _nextLevelExp = 100 - _currentExp;
             _role = response.data['role'] ?? 'MENTEE';
             _isLoading = false;
           });
@@ -466,93 +477,136 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           )
-                        : Row(
+                        : Column(
                             children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: _getTierInfo(_level)['color'],
-                                    width: 4,
-                                  ),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 40,
-                                  backgroundColor: Colors.blue[400],
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 45,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 20),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // 레벨
-                                    Text(
-                                      'Lv. $_level',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey[700],
+                              Row(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: _getTierInfo(_level)['color'],
+                                        width: 4,
                                       ),
                                     ),
-                                    const SizedBox(height: 6),
-                                    // 사용자 닉네임
-                                    Text(
-                                      _username,
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
+                                    child: CircleAvatar(
+                                      radius: 40,
+                                      backgroundColor: Colors.blue[400],
+                                      child: const Icon(
+                                        Icons.person,
+                                        size: 45,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                    const SizedBox(height: 10),
-                                    // 스트릭 정보
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.local_fire_department,
-                                            color: Colors.deepOrange,
-                                            size: 18,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            '$_streak일 연속 달성!',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.grey[800],
+                                  ),
+                                  const SizedBox(width: 20),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // (1) 레벨 / 닉네임 / 트로피 정보
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Lv. $_level',
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.grey[700],
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  _username,
+                                                  style: const TextStyle(
+                                                    fontSize: 22,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                        ],
+                                            const Spacer(),
+                                            Stack(
+                                              clipBehavior: Clip.none,
+                                              children: [
+                                                Icon(
+                                                  _getLevelIcon(_level),
+                                                  color: _getLevelColor(_level)
+                                                      .withValues(alpha: 0.5),
+                                                  size: 56,
+                                                ),
+                                                // 스파클 이펙트들
+                                                Positioned(
+                                                  top: -4,
+                                                  right: -4,
+                                                  child: Icon(
+                                                    Icons.auto_awesome,
+                                                    color: Colors.yellow[300],
+                                                    size: 16,
+                                                  ),
+                                                ),
+                                                Positioned(
+                                                  top: -2,
+                                                  left: -2,
+                                                  child: Icon(
+                                                    Icons.star,
+                                                    color: _getLevelColor(_level)
+                                                        .withValues(alpha: 0.6),
+                                                    size: 12,
+                                                  ),
+                                                ),
+                                                Positioned(
+                                                  bottom: -2,
+                                                  right: 8,
+                                                  child: Icon(
+                                                    Icons.star,
+                                                    color: _getLevelColor(_level)
+                                                        .withValues(alpha: 0.5),
+                                                    size: 10,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        // (2) 경험치 바
+                                        _buildExpBar(),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              // (3) 탄소 절감 실천 횟수 - 가운데 정렬
+                              Center(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.local_fire_department,
+                                      color: Colors.deepOrange,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '탄소 절감을 $_streak일 실천했어요!',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[700],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              // 오른쪽 레벨 아이콘 (큰 버전)
-                              Icon(
-                                _getLevelIcon(_level),
-                                color: _getLevelColor(
-                                  _level,
-                                ).withValues(alpha: 0.3),
-                                size: 50,
                               ),
                             ],
                           ),
@@ -571,9 +625,15 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    '일일 퀘스트',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Row(
+                    children: [
+                      Icon(Icons.task_alt, color: Colors.blue[700], size: 20),
+                      const SizedBox(width: 8),
+                      const Text(
+                        '일일 퀘스트',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                   IconButton(
                     icon: const Icon(Icons.refresh),
@@ -620,18 +680,58 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
                     ),
                   );
                 }),
+              const SizedBox(height: 16),
+              
+              // 일일 퀘스트 새로고침 시간 안내
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.access_time, color: Colors.grey[600], size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      '일일 퀘스트는 매일 오전 6시에 새로고침됩니다.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
 
               // 하단 메뉴
               _buildMenuButton(context, '일일퀘스트 가이드라인', Icons.book, () {
                 Navigator.pushNamed(context, '/guidelines');
               }),
+              const SizedBox(height: 32),
+
+              // 탄소 중립 더 보기 섹션
+              Row(
+                children: [
+                  Icon(Icons.lightbulb, color: Colors.amber[700], size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    '탄소 중립 더 보기',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildCarouselSection(),
               const SizedBox(height: 24),
 
               // 탄소중립 레벨 측정 섹션
-              const Text(
-                '내 실천 레벨',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  Icon(Icons.analytics, color: Colors.purple[700], size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    '내 실천 레벨 측정하기',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               _buildCarbonSurveyButton(context),
@@ -1181,9 +1281,15 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            '관리 중인 멘티',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Icon(Icons.groups, color: Colors.green[700], size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                '관리 중인 멘티',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -1303,9 +1409,15 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            '나의 멘토',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Icon(Icons.school, color: Colors.orange[700], size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                '나의 멘토',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -1414,5 +1526,174 @@ class _LobbyPageState extends State<LobbyPage> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  Widget _buildExpBar() {
+    final progress = _currentExp / 100;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 경험치 바
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Stack(
+              children: [
+                FractionallySizedBox(
+                  widthFactor: progress,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.green.shade400,
+                          Colors.green.shade600,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    '$_currentExp / 100 EXP',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: progress > 0.3 ? Colors.white : Colors.grey[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        // 다음 레벨까지 필요한 경험치
+        Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            '다음 레벨까지 $_nextLevelExp EXP',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 탄소 중립 정보 캐러셀
+  Widget _buildCarouselSection() {
+    final carouselItems = [
+      {
+        'image': 'assets/images/EBS_CN.png',
+        'url': 'https://www.youtube.com/watch?v=XVAoQ60yAZc',
+        'title': 'EBS 탄소중립',
+      },
+      {
+        'image': 'assets/images/CBportal.png',
+        'url': 'https://www.gihoo.or.kr/netzero',
+        'title': '탄소중립 포털',
+      },
+      {
+        'image': 'assets/images/envportal.png',
+        'url': 'https://www.mcee.go.kr/home/web/main.do',
+        'title': '환경교육포털',
+      },
+    ];
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 180,
+          child: PageView.builder(
+            controller: _carouselController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentCarouselPage = index;
+              });
+            },
+            itemCount: carouselItems.length,
+            itemBuilder: (context, index) {
+              return AnimatedBuilder(
+                animation: _carouselController,
+                builder: (context, child) {
+                  double value = 1.0;
+                  if (_carouselController.position.haveDimensions) {
+                    value = _carouselController.page! - index;
+                    value = (1 - (value.abs() * 0.15)).clamp(0.85, 1.0);
+                  }
+                  return Center(
+                    child: SizedBox(
+                      height: Curves.easeInOut.transform(value) * 180,
+                      child: child,
+                    ),
+                  );
+                },
+                child: GestureDetector(
+                  onTap: () => _launchURL(carouselItems[index]['url']!),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        carouselItems[index]['image']!,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        // 페이지 인디케이터
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            carouselItems.length,
+            (index) => Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: _currentCarouselPage == index ? 24 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                color: _currentCarouselPage == index
+                    ? Colors.blue
+                    : Colors.grey[300],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // URL 열기
+  Future<void> _launchURL(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('링크를 열 수 없습니다.')),
+        );
+      }
+    }
   }
 }
