@@ -110,12 +110,12 @@ class _SignupStepPageState extends State<SignupStepPage> {
 
     try {
       final response = await ApiService.get(
-        '/api/user/profile/username/$nickname',
+        '/api/user/check-username/$nickname',
       );
 
-      bool isAvailable = true;
-      if (response.success) {
-        isAvailable = false;
+      bool isAvailable = false;
+      if (response.success && response.data != null) {
+        isAvailable = response.data['available'] ?? false;
       }
 
       setState(() {
@@ -153,19 +153,39 @@ class _SignupStepPageState extends State<SignupStepPage> {
       return;
     }
 
+    // 멘토 닉네임 형식 검증 (영어, 숫자만, 4~15글자)
+    if (mentorNickname.length < 4 || mentorNickname.length > 15) {
+      setState(() {
+        _mentorNicknameErrorMessage = '닉네임은 4글자 이상 15글자 이하여야 합니다.';
+        _isMentorNicknameValid = false;
+        _mentorNickname = null;
+      });
+      return;
+    }
+
+    final validPattern = RegExp(r'^[a-zA-Z0-9]+$');
+    if (!validPattern.hasMatch(mentorNickname)) {
+      setState(() {
+        _mentorNicknameErrorMessage = '닉네임은 영어, 숫자만 사용할 수 있습니다.';
+        _isMentorNicknameValid = false;
+        _mentorNickname = null;
+      });
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      // 닉네임으로 사용자 프로필 조회
+      // 닉네임 확인 API 호출
       final response = await ApiService.get(
-        '/api/user/profile/username/$mentorNickname',
+        '/api/user/check-username/$mentorNickname',
       );
 
       if (!mounted) return;
 
       if (!response.success || response.data == null) {
         setState(() {
-          _mentorNicknameErrorMessage = '해당 닉네임의 사용자를 찾을 수 없습니다.';
+          _mentorNicknameErrorMessage = '닉네임 확인 중 오류가 발생했습니다.';
           _isMentorNicknameValid = false;
           _mentorNickname = null;
           _isLoading = false;
@@ -173,13 +193,13 @@ class _SignupStepPageState extends State<SignupStepPage> {
         return;
       }
 
-      // 멘토 정보 추출
-      final userData = response.data;
-      final userRole = userData['role'];
+      final isAvailable = response.data['available'] ?? true;
+      final userRole = response.data['role'];
 
-      if (userRole == null) {
+      // 닉네임이 사용 가능한 경우 (사용자가 없는 경우)
+      if (isAvailable) {
         setState(() {
-          _mentorNicknameErrorMessage = '사용자 정보를 가져올 수 없습니다.';
+          _mentorNicknameErrorMessage = '해당 닉네임의 사용자를 찾을 수 없습니다.';
           _isMentorNicknameValid = false;
           _mentorNickname = null;
           _isLoading = false;
