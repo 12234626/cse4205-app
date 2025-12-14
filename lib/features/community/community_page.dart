@@ -236,7 +236,7 @@ class _CommunityPageState extends State<CommunityPage> {
                             ? AppColors.primary
                             : Colors.grey[300],
                         foregroundColor: _selectedStatus == 'PENDING'
-                            ? Colors.white
+                            ? Colors.black
                             : Colors.black87,
                         elevation: _selectedStatus == 'PENDING' ? 4 : 0,
                       ),
@@ -255,7 +255,7 @@ class _CommunityPageState extends State<CommunityPage> {
                             ? AppColors.primary
                             : Colors.grey[300],
                         foregroundColor: _selectedStatus == 'CONSENTED'
-                            ? Colors.white
+                            ? Colors.black
                             : Colors.black87,
                         elevation: _selectedStatus == 'CONSENTED' ? 4 : 0,
                       ),
